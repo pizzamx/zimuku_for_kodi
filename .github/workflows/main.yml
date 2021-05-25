@@ -2,7 +2,8 @@ name: ZipNRlz
 
 on:
   push:
-    branches: [ main ]
+    tags:
+    - v*
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -10,5 +11,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Run a one-line script
+      - name: zip it
         run: zip -r service.subtitles.zimukux.zip ./*
+        
+      - name: release
+      - uses: ncipollo/release-action@v1
+        with:
+          artifacts: "service.subtitles.zimukux.zip"
+          token: ${{ secrets.PAT_FOR_ACTIONS }}
