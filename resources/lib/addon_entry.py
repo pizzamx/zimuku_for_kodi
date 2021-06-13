@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import zimuku_service
+import sub_provider_service
 
-zimuku_service.run()
+sub_provider_service.run()

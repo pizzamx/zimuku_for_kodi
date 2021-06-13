@@ -1,9 +1,7 @@
-name: ZipNRlz
+name: Zip&Rlz
 
-on:
-  push:
-    tags:
-    - v*
+on: push
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -11,11 +9,21 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Get XML
+        id: getver
+        uses: mavrosxristoforos/get-xml-info@1.0
+        with:
+          xml-file: 'addon.xml'
+          xpath: 'string(/addon/@version)'
+
       - name: zip it
-        run: zip -r service.subtitles.zimukux.zip ./*
-        
+        run: |
+          mkdir plugin.subtitles.zimukux
+          mv ./* plugin.subtitles.zimukux/
+          zip -r plugin.subtitles.zimukux-${{ steps.getver.outputs.info }}.zip plugin.subtitles.zimukux/
+
       - name: release
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "service.subtitles.zimukux.zip"
+          artifacts: "plugin.subtitles.zimukux-${{ steps.getver.outputs.info }}.zip"
           token: ${{ secrets.PAT_FOR_ACTIONS }}

@@ -26,15 +26,15 @@ def log(module, msg, level=xbmc.LOGDEBUG):
 def unpack(file_path):
     """
     Get the file list from archive file.
-    
+
     Params:
         file_path   The path to the archive file.
-        
+
     Return:
         tuple(whole_path:str, subfiles:list)
             whole_path  The quoted path to the subfiles.
             subfiles    The list of subtitle files.
-            
+
     Raise:
         TypeError   The file type is unsupported. Some of the files is theoretically supported, such as 7z/tar.
                     However, some encoding (Chinese chars for example) in file names may cause failure, even crash,
@@ -52,15 +52,15 @@ def unpack(file_path):
         return '', []
 
     file_path = file_path.rstrip('/')
+    archive_file = urllib.parse.quote_plus(xbmcvfs.translatePath(file_path))
+    ext = file_path[file_path.rfind('.') + 1:]
+    archive_path = '%(protocol)s://%(archive_file)s' % {
+        'protocol': ext,
+        'archive_file': archive_file
+    }
     if file_path.endswith(self_archive_exts):
-        archive_file = urllib.parse.quote_plus(xbmc.translatePath(file_path))
-        ext = file_path[file_path.rfind('.') + 1:]
-        archive_path = '%(protocol)s://%(archive_file)s' % {
-            'protocol': ext,
-            'archive_file': archive_file
-        }
         log(sys._getframe().f_code.co_name,
-            "Get %s archive: %s" % (ext, archive_path),
+            "UNPACK %s FILE: %s" % (ext, archive_path),
             level=xbmc.LOGDEBUG)
 
         dirs, files = xbmcvfs.listdir(archive_path)
@@ -97,10 +97,10 @@ def unpack_7z(file_path):
     TODO ( YK-Samgo 20201023): Now it is only a stub function to skip the 7z format.
                                 Use some way else to decompress the 7z archive, 
                                 then use the decompressed path and decompressed files as the return.
-    
+
     Params:
         file_path   The path to the archive file.
-        
+
     Return:
         tuple(whole_path:str, subfiles:list)
             whole_path  The quoted path to the subfiles.
