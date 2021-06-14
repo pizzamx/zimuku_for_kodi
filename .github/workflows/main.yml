@@ -9,21 +9,15 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Get XML
-        id: getver
-        uses: mavrosxristoforos/get-xml-info@1.0
-        with:
-          xml-file: 'addon.xml'
-          xpath: 'string(/addon/@version)'
-
       - name: zip it
         run: |
+          echo ::set-env name=VER::$(cat addon.xml |grep  -oP 'name="ZiMuKuX" version="\K[^"]*')
           mkdir plugin.subtitles.zimukux
           mv ./* plugin.subtitles.zimukux/
-          zip -r plugin.subtitles.zimukux-${{ steps.getver.outputs.info }}.zip plugin.subtitles.zimukux/
+          zip -r plugin.subtitles.zimukux-${{ env.VER }}.zip plugin.subtitles.zimukux/
 
       - name: release
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "plugin.subtitles.zimukux-${{ steps.getver.outputs.info }}.zip"
+          artifacts: "plugin.subtitles.zimukux-${{ env.VER }}.zip"
           token: ${{ secrets.PAT_FOR_ACTIONS }}
