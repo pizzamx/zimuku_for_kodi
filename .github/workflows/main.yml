@@ -11,12 +11,12 @@ jobs:
 
       - name: zip it
         run: |
-          cat addon.xml |grep  -oP 'name="ZiMuKuX" version="\K[^"]*'
           echo "ZIMUKUX_VER=`cat addon.xml |grep  -oP 'name="ZiMuKuX" version="\K[^"]*'`" >> $GITHUB_ENV
           cat $GITHUB_ENV
           cd ..
           mv zimuku_for_kodi/ plugin.subtitles.zimukux/
-          zip -r plugin.subtitles.zimukux-${{ env.ZIMUKUX_VER }}.zip plugin.subtitles.zimukux/
+          zip -r -qq plugin.subtitles.zimukux-${{ env.ZIMUKUX_VER }}.zip plugin.subtitles.zimukux/
+          ls
 
       - name: release
         uses: ncipollo/release-action@v1
