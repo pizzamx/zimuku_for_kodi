@@ -18,6 +18,7 @@ jobs:
           mv zimuku_for_kodi/ plugin.subtitles.zimukux/
           zip -r -qq plugin.subtitles.zimukux-$ver.zip plugin.subtitles.zimukux/
           mv plugin.subtitles.zimukux-$ver.zip plugin.subtitles.zimukux/
+          ls plugin.subtitles.zimukux/
 
       - name: release
         uses: ncipollo/release-action@v1
