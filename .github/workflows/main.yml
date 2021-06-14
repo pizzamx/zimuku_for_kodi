@@ -13,9 +13,9 @@ jobs:
         run: |
           cat addon.xml |grep  -oP 'name="ZiMuKuX" version="\K[^"]*'
           echo "ZIMUKUX_VER=`cat addon.xml |grep  -oP 'name="ZiMuKuX" version="\K[^"]*'`" >> $GITHUB_ENV
-          ls -l
+          cat $GITHUB_ENV
           cd ..
-          ls -l
+          mv zimuku_for_kodi/ plugin.subtitles.zimukux/
           zip -r plugin.subtitles.zimukux-${{ env.ZIMUKUX_VER }}.zip plugin.subtitles.zimukux/
 
       - name: release
