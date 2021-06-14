@@ -23,5 +23,7 @@ jobs:
       - name: release
         uses: ncipollo/release-action@v1
         with:
+          tag:v${{ env.ZIMUKUX_VER }}
+          commit:main
           artifacts: "plugin.subtitles.zimukux-${{ env.ZIMUKUX_VER }}.zip"
           token: ${{ secrets.PAT_FOR_ACTIONS }}
