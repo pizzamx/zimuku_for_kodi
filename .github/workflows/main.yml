@@ -12,7 +12,7 @@ jobs:
       - name: check tag
         run: |
           ver=`cat addon.xml |grep  -oP 'name="ZiMuKuX" version="\K[^"]*'`
-          echo$ ver
+          echo $ver
           if git rev-parse "$ver" >/dev/null 2>&1; then
             echo "SHOULD_RELEASE=false" >> $GITHUB_ENV;
           else
