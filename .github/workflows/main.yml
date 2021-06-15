@@ -20,7 +20,7 @@ jobs:
           cat $GITHUB_ENV
 
       - name: zip it
-        if: ${{ env.SHOULD_RELEASE == "true" }}
+        if: ${{ env.SHOULD_RELEASE == 'true' }}
         run: |
           echo "ZIMUKUX_VER=`cat addon.xml |grep  -oP 'name="ZiMuKuX" version="\K[^"]*'`" >> $GITHUB_ENV
           ver=`cat addon.xml |grep  -oP 'name="ZiMuKuX" version="\K[^"]*'`
@@ -33,7 +33,7 @@ jobs:
 
       - name: release
         uses: ncipollo/release-action@v1
-        if: ${{ should_release == true }}
+        if: ${{ env.SHOULD_RELEASE == 'true' }}
         with:
           tag: "v${{ env.ZIMUKUX_VER }}"
           commit: "main"
