@@ -9,31 +9,30 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: check tag
-        run: |
-          ver=v`cat addon.xml |grep -oP 'name="ZiMuKuX" version="\K[^"]*'`
-          echo $ver
-          git show-ref --tags $ver
-          if git show-ref --tags $ver; then
-            echo "SHOULD_RELEASE=false" >> $GITHUB_ENV;
-          else
-            echo "SHOULD_RELEASE=true" >> $GITHUB_ENV
-          fi
-
-      - name: zip it
-        if: ${{ env.SHOULD_RELEASE == 'true' }}
+      - name: get addon version
         run: |
           ver=`cat addon.xml |grep -oP 'name="ZiMuKuX" version="\K[^"]*'`
           echo ZIMUKUX_VER=$ver >> $GITHUB_ENV
+
+      - uses: mukunku/tag-exists-action@v1.0.0
+        id: checkTag
+        with: 
+          tag: "v${{ env.ZIMUKUX_VER }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_FOR_ACTIONS }}
+
+      - name: zip it
+        if: ${{ steps.checkTag.outputs.exists == 'false' }}
+        run: |
           for file in .[^.]*; do rm -rf "$file"; done
           cd ..
           mv zimuku_for_kodi/ plugin.subtitles.zimukux/
-          zip -r -qq plugin.subtitles.zimukux-$ver.zip plugin.subtitles.zimukux/
-          mv plugin.subtitles.zimukux-$ver.zip plugin.subtitles.zimukux/
+          zip -r -qq plugin.subtitles.zimukux-${{ env.ZIMUKUX_VER }}.zip plugin.subtitles.zimukux/
+          mv plugin.subtitles.zimukux-${{ env.ZIMUKUX_VER }}.zip plugin.subtitles.zimukux/
           mv plugin.subtitles.zimukux/ zimuku_for_kodi/ 
 
       - name: release
-        if: ${{ env.SHOULD_RELEASE == 'true' }}
+        if: ${{ steps.checkTag.outputs.exists == 'false' }}
         uses: ncipollo/release-action@v1
         with:
           tag: "v${{ env.ZIMUKUX_VER }}"
