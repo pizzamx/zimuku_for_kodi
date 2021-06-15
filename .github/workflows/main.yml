@@ -12,6 +12,7 @@ jobs:
       - name: check tag
         run: |
           ver=`cat addon.xml |grep  -oP 'name="ZiMuKuX" version="\K[^"]*'`
+          echo$ ver
           if git rev-parse "$ver" >/dev/null 2>&1; then
             echo "SHOULD_RELEASE=false" >> $GITHUB_ENV;
           else
@@ -22,8 +23,8 @@ jobs:
       - name: zip it
         if: ${{ env.SHOULD_RELEASE == 'true' }}
         run: |
-          echo "ZIMUKUX_VER=`cat addon.xml |grep  -oP 'name="ZiMuKuX" version="\K[^"]*'`" >> $GITHUB_ENV
           ver=`cat addon.xml |grep  -oP 'name="ZiMuKuX" version="\K[^"]*'`
+          echo ZIMUKUX_VER=$ver >> $GITHUB_ENV
           for file in .[^.]*; do rm -rf "$file"; done
           cd ..
           mv zimuku_for_kodi/ plugin.subtitles.zimukux/
@@ -32,8 +33,8 @@ jobs:
           mv plugin.subtitles.zimukux/ zimuku_for_kodi/ 
 
       - name: release
-        uses: ncipollo/release-action@v1
         if: ${{ env.SHOULD_RELEASE == 'true' }}
+        uses: ncipollo/release-action@v1
         with:
           tag: "v${{ env.ZIMUKUX_VER }}"
           commit: "main"
