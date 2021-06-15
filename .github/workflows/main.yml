@@ -1,9 +1,6 @@
 name: Zip&Rlz
 
-on: 
-  push:
-    tags-ignore:
-      - '**'
+on: push
       
 jobs:
   build:
