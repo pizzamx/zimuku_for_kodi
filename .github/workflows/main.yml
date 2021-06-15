@@ -13,14 +13,14 @@ jobs:
         run: |
           ver=`cat addon.xml |grep  -oP 'name="ZiMuKuX" version="\K[^"]*'`
           if git rev-parse "$ver" >/dev/null 2>&1; then
-            echo "should_release=false" >> $GITHUB_ENV;
+            echo "SHOULD_RELEASE=false" >> $GITHUB_ENV;
           else
-            echo "should_release=true" >> $GITHUB_ENV
+            echo "SHOULD_RELEASE=true" >> $GITHUB_ENV
           fi
           cat $GITHUB_ENV
 
       - name: zip it
-        if: ${{ should_release == true }}
+        if: ${{ env.SHOULD_RELEASE == "true" }}
         run: |
           echo "ZIMUKUX_VER=`cat addon.xml |grep  -oP 'name="ZiMuKuX" version="\K[^"]*'`" >> $GITHUB_ENV
           ver=`cat addon.xml |grep  -oP 'name="ZiMuKuX" version="\K[^"]*'`
