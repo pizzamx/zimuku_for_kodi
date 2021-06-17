@@ -17,7 +17,7 @@ jobs:
       - uses: mukunku/tag-exists-action@v1.0.0
         id: checkTag
         with: 
-          tag: "v${{ env.ZIMUKUX_VER }}"
+          tag: v${{ env.ZIMUKUX_VER }}
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_FOR_ACTIONS }}
 
@@ -30,12 +30,15 @@ jobs:
           zip -r -qq plugin.subtitles.zimukux-${{ env.ZIMUKUX_VER }}.zip plugin.subtitles.zimukux/
           mv plugin.subtitles.zimukux-${{ env.ZIMUKUX_VER }}.zip plugin.subtitles.zimukux/
           mv plugin.subtitles.zimukux/ zimuku_for_kodi/ 
+          cd zimuku_for_kodi
+          sed -e '/^$/,$d' CHANGES > changelog.txt
 
       - name: release
         if: ${{ steps.checkTag.outputs.exists == 'false' }}
         uses: ncipollo/release-action@v1
         with:
-          tag: "v${{ env.ZIMUKUX_VER }}"
-          commit: "main"
-          artifacts: "plugin.subtitles.zimukux-${{ env.ZIMUKUX_VER }}.zip"
+          tag: v${{ env.ZIMUKUX_VER }}
+          commit: main
+          bodyFile: changelog.txt
+          artifacts: plugin.subtitles.zimukux-${{ env.ZIMUKUX_VER }}.zip
           token: ${{ secrets.PAT_FOR_ACTIONS }}
