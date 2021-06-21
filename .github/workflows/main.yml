@@ -26,10 +26,10 @@ jobs:
         run: |
           for file in .[^.]*; do rm -rf "$file"; done
           cd ..
-          mv zimuku_for_kodi/ plugin.subtitles.zimukux/
-          zip -r -qq plugin.subtitles.zimukux-${{ env.ZIMUKUX_VER }}.zip plugin.subtitles.zimukux/
-          mv plugin.subtitles.zimukux-${{ env.ZIMUKUX_VER }}.zip plugin.subtitles.zimukux/
-          mv plugin.subtitles.zimukux/ zimuku_for_kodi/ 
+          mv zimuku_for_kodi/ script.subtitles.zimukux/
+          zip -r -qq script.subtitles.zimukux-${{ env.ZIMUKUX_VER }}.zip script.subtitles.zimukux/
+          mv script.subtitles.zimukux-${{ env.ZIMUKUX_VER }}.zip script.subtitles.zimukux/
+          mv script.subtitles.zimukux/ zimuku_for_kodi/ 
           cd zimuku_for_kodi
           sed -e '/^$/,$d' CHANGES > changelog.txt
 
@@ -40,5 +40,5 @@ jobs:
           tag: v${{ env.ZIMUKUX_VER }}
           commit: main
           bodyFile: changelog.txt
-          artifacts: plugin.subtitles.zimukux-${{ env.ZIMUKUX_VER }}.zip
+          artifacts: script.subtitles.zimukux-${{ env.ZIMUKUX_VER }}.zip
           token: ${{ secrets.PAT_FOR_ACTIONS }}
