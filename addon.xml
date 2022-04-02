@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="script.subtitles.zimukux" name="ZiMuKuX" version="0.1.1" provider-name="pizzamx">
+<addon id="script.subtitles.zimukux" name="ZiMuKuX" version="0.1.5" provider-name="pizzamx">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.beautifulsoup4" version="4.6.2"/>
@@ -9,17 +9,21 @@
     </requires>
     <extension point="xbmc.subtitle.module" library="resources/lib/addon_entry.py" />
     <extension point="xbmc.addon.metadata">
-        <summary lang="en">zimuku subtitle</summary>
-        <summary lang="zh">字幕库</summary>
-        <description lang="en">Search and download subtitles from ZiMuKu</description>
-        <description lang="zh">从「字幕库」下载字幕（网址经常变）。感谢 taxigps 大神的原创，这是一个衍生品</description>
+        <summary lang="en_GB">zimuku subtitle</summary>
+        <summary lang="zh_CN">字幕库</summary>
+        <description lang="en_GB">Search and download subtitles from ZiMuKu</description>
+        <description lang="zh_CN">从「字幕库」下载字幕（网址经常变）。感谢 taxigps 大神的原创，这是一个衍生品</description>
         <platform>all</platform>
-        <license>GNU GENERAL PUBLIC LICENSE. Version 2, June 1991</license>
+        <license>GPL-2.0-or-later</license>
         <assets>
             <icon>resources/icon.png</icon>
             <fanart>resources/fanart.png</fanart>
         </assets>
         <news>
+v0.1.5(2022/4/22)
+- Adaption made for Zimuku's new anti-spoofing mechanism
+- Misc. bug fix and code tweak
+
 v0.1.1(2021/6/21)
 - Rename addon to script.subtitles.zimukux
 

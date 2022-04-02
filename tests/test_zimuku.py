@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import os
 import sys
 import tempfile
@@ -50,7 +48,7 @@ class TestZimukuAgent(unittest.TestCase):
 
     def get_agent(self, settings):
         return zmkagnt.Zimuku_Agent(
-            'http://zimuku.org', tmp_folder, Logger(),
+            'https://zimuku.org', tmp_folder, Logger(),
             Unpacker(tmp_folder),
             settings)
 
@@ -65,7 +63,20 @@ class TestZimukuAgent(unittest.TestCase):
             'Young.Sheldon.S04E17.720p.HEVC.x265-MeGusta.mkv',
             '3let_language': ['eng']}
         result = agent.search('小谢尔顿', items)
-        self.assertIsNotNone(result)
+        self.assertNotEqual(len(result), 0)
+
+    def test_search2(self):
+        # 测试搜索功能
+        agent = self.get_agent({'subtype': 'srt', 'sublang': 'dualchs'})
+
+        items = {
+            'temp': False, 'rar': False, 'mansearch': False, 'year': '2010', 'season': '6',
+            'episode': '2', 'tvshow': '唐顿庄园', 'title': 'Episode 2',
+            'file_original_path':
+            'F:\\Downton.Abbey.2010.S06E02.1080p.BluRay.DD.2.0.x265.10bit-monster6688.mkv',
+            '3let_language': ['', 'eng']}
+        result = agent.search('唐顿庄园', items)
+        self.assertNotEqual(len(result), 0)
 
     def test_deep_search(self):
         # 搜索不在第一页的字幕
@@ -89,7 +100,7 @@ class TestZimukuAgent(unittest.TestCase):
             'Free.Solo.2018.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTG.mkv',
             '3let_language': ['', 'eng']}
         result = agent.search('Free Solo', items)
-        self.assertEqual(len(result), 7)
+        self.assertEqual(len(result), 8)
 
     def test_download(self):
         # 测试下载功能
@@ -144,14 +155,14 @@ class TestZimukuAgent(unittest.TestCase):
     def test_sub_rating(self):
         agent = self.get_agent({'subtype': 'none', 'sublang': 'none'})
         items = {
-            'temp': False, 'rar': False, 'mansearch': False, 'year': '', 'season': '6',
-            'episode': '5', 'tvshow': '9号秘事', 'title': '',
+            'temp': False, 'rar': False, 'mansearch': False, 'year': '', 'season': '2',
+            'episode': '4', 'tvshow': '9号秘事', 'title': '',
             'file_original_path':
             'tv.mkv', '3let_language': ['eng']}
         result = agent.search('9号秘事', items)
         self.assertEqual(len(result), 1)
         sub = result[0]
-        self.assertEqual(sub['rating'], '2')
+        self.assertEqual(sub['rating'], '4')
 
 
 if __name__ == '__main__':
