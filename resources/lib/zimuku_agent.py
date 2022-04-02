@@ -68,7 +68,9 @@ class Zimuku_Agent:
             s.mount('http://', a)
             # self.logger.log(sys._getframe().f_code.co_name, 'requests GET [%s]' % (url))
 
-            http_response = s.get(url, headers=request_headers)
+            url1 = url + '&security_verify_data=313932302c31303830'
+            a = s.get(url, headers=request_headers)
+            http_response = s.get(url1, headers=request_headers)
 
             headers = http_response.headers
             http_body = http_response.content
