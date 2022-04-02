@@ -2,6 +2,8 @@ name: Zip and Release
 
 on: 
   push:
+    branches:
+      - '**'
     tags-ignore:
       - '**'
       
