@@ -1,9 +1,6 @@
 name: Zip and Release
 
-on:
-  push:
-    tags-ignore:
-      - '**'
+on: [push]
       
 jobs:
   build:
