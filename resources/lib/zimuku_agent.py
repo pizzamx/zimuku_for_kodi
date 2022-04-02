@@ -69,10 +69,13 @@ class Zimuku_Agent:
             # self.logger.log(sys._getframe().f_code.co_name, 'requests GET [%s]' % (url))
 
             url1 = url + '&security_verify_data=313932302c31303830'
-            a = s.get(url, headers=request_headers)
-
-            http_response = s.get(url1, headers=request_headers)
+            url2 = url + '?security_verify_data=313932302c31303830'
+            s.get(url, headers=request_headers)
+            s.get(url1, headers=request_headers)
             http_response = s.get(url, headers=request_headers)
+            if http_response.status_code != 200:
+                s.get(url2, headers=request_headers)
+                http_response = s.get(url2, headers=request_headers)
 
             headers = http_response.headers
             http_body = http_response.content
