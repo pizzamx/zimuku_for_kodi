@@ -41,14 +41,14 @@ class TestZimukuAgent(unittest.TestCase):
         from lib import zimuku_agent as zmkagnt
 
         global tmp_folder
-        tmp_folder = tempfile.TemporaryFile().name
+        tmp_folder = tempfile.TemporaryDirectory().name
         os.mkdir(tmp_folder)
 
         return super().setUp()
-
+    
     def get_agent(self, settings):
         return zmkagnt.Zimuku_Agent(
-            'https://zimuku.org', tmp_folder, Logger(),
+            'http://zimuku.org', tmp_folder, Logger(),
             Unpacker(tmp_folder),
             settings)
 
