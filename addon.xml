@@ -20,6 +20,9 @@
             <fanart>resources/fanart.png</fanart>
         </assets>
         <news>
+v0.1.6(2022/5/25)
+- Adaption made for Zimuku's latest "anti-spoofing" mechanism (contribute by @SaneBow)
+
 v0.1.5(2022/4/22)
 - Adaption made for Zimuku's new anti-spoofing mechanism
 - Misc. bug fix and code tweaks
