@@ -45,7 +45,7 @@ class TestZimukuAgent(unittest.TestCase):
         os.mkdir(tmp_folder)
 
         return super().setUp()
-    
+
     def get_agent(self, settings):
         return zmkagnt.Zimuku_Agent(
             'http://zimuku.org', tmp_folder, Logger(),

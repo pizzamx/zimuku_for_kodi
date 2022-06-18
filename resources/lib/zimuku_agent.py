@@ -31,6 +31,7 @@ class Zimuku_Agent:
     def __init__(self, base_url, dl_location, logger, unpacker, settings):
         self.ua = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)'
         self.ZIMUKU_BASE = base_url
+        self.INIT_PAGE = base_url + '/?security_verify_data=313932302c31303830'
         self.ZIMUKU_API = '%s/search?q=%%s&vertoken=%%s' % base_url
         self.DOWNLOAD_LOCATION = dl_location
         self.FILE_MIN_SIZE = 1024
@@ -41,9 +42,21 @@ class Zimuku_Agent:
         self.session = requests.Session()
         self.vertoken = ''
 
+        # 一次性调用，获取那个vertoken。目测这东西会过期，不过不管那么多了，感觉过两天验证机制又要变
+        self.init_site()
+
     def set_setting(self, settings):
         # for unittestting purpose
         self.plugin_settings = settings
+
+    def init_site(self):
+        self.session.cookies.set(
+            'srcurl', '68747470733a2f2f7a696d756b752e6f72672f')
+        self.get_page(self.ZIMUKU_BASE)
+
+        self.get_page(self.INIT_PAGE)
+        _, resp = self.get_page(self.ZIMUKU_BASE)
+        self.get_vertoken(resp)
 
     def get_page(self, url, **kwargs):
         """
@@ -68,15 +81,19 @@ class Zimuku_Agent:
 
             a = requests.adapters.HTTPAdapter(max_retries=3)
             s.mount('http://', a)
-            self.logger.log(sys._getframe().f_code.co_name, 'requests GET [%s]' % (url))
 
-            url += '&' if '?' in url else '?'
-            url += 'security_verify_data=313932302c31303830'
+            #url += '&' if '?' in url else '?'
+            #url += 'security_verify_data=313932302c31303830'
+
+            self.logger.log(sys._getframe().f_code.co_name,
+                            'requests GET [%s]' % (url), level=3)
 
             http_response = s.get(url, headers=request_headers)
+            """
             if http_response.status_code != 200:
                 s.get(url, headers=request_headers)
                 http_response = s.get(url, headers=request_headers)
+            """
 
             headers = http_response.headers
             http_body = http_response.content
@@ -176,22 +193,21 @@ class Zimuku_Agent:
             "lang": langs
         }
 
-    def get_vertoken(self):
+    def get_vertoken(self, resp):
         # get vertoken from home page and cache it for the session
-        if self.vertoken:
-            return self.vertoken
-        else:
-            self.logger.log(sys._getframe().f_code.co_name, "Fetching new vertoken form home page")
-            try:
-                headers, data = self.get_page(self.ZIMUKU_BASE+'/')
-                hsoup = BeautifulSoup(data, 'html.parser')
-                vertoken = hsoup.find('input', attrs={'name': 'vertoken'}).attrs.get('value', '')
-                self.vertoken = vertoken
-                return vertoken
-            except Exception as e:
-                self.logger.log(sys._getframe().f_code.co_name, 'ERROR GETTING vertoken, E=(%s: %s)' %
-                                (Exception, e), level=3)
-                return ''
+        self.logger.log(sys._getframe().f_code.co_name,
+                        "Fetching new vertoken form home page")
+        try:
+            headers, data = self.get_page(self.ZIMUKU_BASE+'/')
+            hsoup = BeautifulSoup(resp, 'html.parser')
+            vertoken = hsoup.find(
+                'input', attrs={'name': 'vertoken'}).attrs.get('value', '')
+            self.vertoken = vertoken
+            return vertoken
+        except Exception as e:
+            self.logger.log(sys._getframe().f_code.co_name, 'ERROR GETTING vertoken, E=(%s: %s)' %
+                            (Exception, e), level=3)
+            return ''
 
     def search(self, title, item):
         """
@@ -213,9 +229,9 @@ class Zimuku_Agent:
         """
         subtitle_list = []
 
-        vertoken = self.get_vertoken()
+        #vertoken = self.get_vertoken()
 
-        url = self.ZIMUKU_API % (urllib.parse.quote(title), vertoken)
+        url = self.ZIMUKU_API % (urllib.parse.quote(title), self.vertoken)
         self.logger.log(sys._getframe().f_code.co_name,
                         "Search API url: %s" % (url))
         try:
