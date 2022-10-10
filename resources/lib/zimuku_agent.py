@@ -32,7 +32,9 @@ class Zimuku_Agent:
         self.ua = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)'
         self.ZIMUKU_BASE = base_url
         self.INIT_PAGE = base_url + '/?security_verify_data=313932302c31303830'
-        self.ZIMUKU_API = '%s/search?q=%%s&vertoken=%%s' % base_url
+        #self.ZIMUKU_API = '%s/search?q=%%s&vertoken=%%s' % base_url
+        self.TOKEN_PARAM = 'security_verify_data=313932302c31303830'
+        self.ZIMUKU_API = '%s/search?q=%%s' % base_url
         self.DOWNLOAD_LOCATION = dl_location
         self.FILE_MIN_SIZE = 1024
 
@@ -43,7 +45,7 @@ class Zimuku_Agent:
         self.vertoken = ''
 
         # 一次性调用，获取那个vertoken。目测这东西会过期，不过不管那么多了，感觉过两天验证机制又要变
-        self.init_site()
+        # self.init_site()
 
     def set_setting(self, settings):
         # for unittestting purpose
@@ -231,11 +233,17 @@ class Zimuku_Agent:
 
         #vertoken = self.get_vertoken()
 
-        url = self.ZIMUKU_API % (urllib.parse.quote(title), self.vertoken)
-        self.logger.log(sys._getframe().f_code.co_name,
-                        "Search API url: %s" % (url))
+        get_cookie_url = '%s&%s' % (self.ZIMUKU_API %
+                                    (urllib.parse.quote(title)), self.TOKEN_PARAM)
+        url = self.ZIMUKU_API % urllib.parse.quote(title)
         try:
-            # Search page.
+            # 10/10/22: 变成搜索要先拿 cookie
+            self.get_page(url)
+            self.get_page(get_cookie_url)
+
+            # 真正的搜索
+            self.logger.log(sys._getframe().f_code.co_name,
+                            "Search API url: %s" % (url))
             headers, data = self.get_page(url)
             soup = BeautifulSoup(data, 'html.parser')
         except Exception as e:
