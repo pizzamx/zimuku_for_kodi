@@ -115,6 +115,15 @@ def Download(url):
     if len(sub_name_list) == 1:
         selected_sub = sub_file_list[0]
     else:
+        # 不显示相同的前缀，防止文件名过长滚动
+        base = sub_name_list[0]
+        diff_index = next(filter(
+            lambda i: any(s[i] != base[i] for s in sub_name_list),
+            range(len(base))
+        ))
+        dot = base[:diff_index].rfind('.') + 1
+        sub_name_list = [s[dot:] for s in sub_name_list]
+
         sel = xbmcgui.Dialog().select('请选择压缩包中的字幕', sub_name_list)
         if sel == -1:
             sel = 0
