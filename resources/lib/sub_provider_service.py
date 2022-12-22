@@ -68,6 +68,16 @@ def Search(item):
 
     subtitle_list = agent.search(search_str, item)
 
+    # 粗略过滤当前集数的字幕
+    try:
+        episode = int(item['episode'])
+        es = 'E%02d' % episode
+        filtered = [s for s in subtitle_list if es in s['filename'].upper()]
+        if len(filtered) > 0:
+            subtitle_list = filtered
+    except:
+        pass
+
     if len(subtitle_list) != 0:
         for s in subtitle_list:
             listitem = xbmcgui.ListItem(label=s["language_name"], label2=s["filename"])
