@@ -72,7 +72,8 @@ def unpack(file_path):
 
         subtitle_list = []
         for subfile in files:
-            if subfile.endswith(exts):
+            # 小写扩展名
+            if subfile[-4:].lower().endswith(exts):
                 subtitle_list.append(subfile)
 
     elif file_path.endswith('.7z'):

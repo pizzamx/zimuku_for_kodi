@@ -457,6 +457,11 @@ class Zimuku_Agent:
         if filename == '':
             # No file received.
             return [], []
+        
+        # 小写扩展名
+        dot = filename.rfind(".")
+        if dot != -1:
+            filename = filename[:dot] + filename[dot:].lower()
 
         rtn_list = []
         if filename.endswith(exts):
