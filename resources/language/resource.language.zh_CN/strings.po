@@ -53,5 +53,18 @@ msgctxt "#30225"
 msgid "Eng + Cht"
 msgstr "双语（繁）"
 
+msgctxt "#30300"
+msgid "Proxy Settings"
+msgstr "代理设置"
 
+msgctxt "#30310"
+msgid "Follow kodi proxy"
+msgstr "跟随Kodi代理设置"
 
+msgctxt "#30311"
+msgid "Use Proxy"
+msgstr "使用代理"
+
+msgctxt "#30312"
+msgid "Proxy server"
+msgstr "代理服务器"

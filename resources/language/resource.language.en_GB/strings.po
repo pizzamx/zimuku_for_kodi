@@ -52,3 +52,19 @@ msgstr ""
 msgctxt "#30225"
 msgid "Eng + Cht"
 msgstr ""
+
+msgctxt "#30300"
+msgid "Proxy Settings"
+msgstr ""
+
+msgctxt "#30310"
+msgid "Follow kodi proxy settings"
+msgstr ""
+
+msgctxt "#30311"
+msgid "Use proxy"
+msgstr ""
+
+msgctxt "#30312"
+msgid "Proxy server"
+msgstr ""

@@ -221,6 +221,11 @@ def run():
     zimuku_base_url = __addon__.getSetting("ZiMuKuUrl")
     tpe = __addon__.getSetting("subtype")
     lang = __addon__.getSetting("sublang")
+    
+    if __addon__.getSetting("proxy_follow_kodi") != "true":
+        proxy = ("" if __addon__.getSetting("proxy_use") != "true"
+                    else __addon__.getSetting("proxy_server"))
+        os.environ["HTTP_PROXY"] = os.environ["HTTPS_PROXY"] = proxy
 
     agent = zmkagnt.Zimuku_Agent(zimuku_base_url, __temp__, logger, Unpacker(),
                                  {'subtype': tpe, 'sublang': lang})
