@@ -470,8 +470,6 @@ class Zimuku_Agent:
             return [fn], [full_path]
         elif filename.endswith(supported_archive_exts):
             full_path = self.store_file(filename, data)
-            # libarchive requires the access to the file, so sleep a while to ensure the file.
-            time.sleep(0.5)
             archive_path, sub_name_list = self.unpacker.unpack(full_path)
 
             # 返回的文件名不能做乱码修正，不然找不到……
@@ -517,8 +515,8 @@ class Zimuku_Agent:
             ts, os.path.splitext(filename)[1])).replace('\\', '/')
         with open(tempfile, "wb") as sub_file:
             sub_file.write(data)
-            # May require close file explicitly to ensure the file.
-            sub_file.close()
+            # use fsync to ensure the file.
+            os.fsync(sub_file.fileno())
         return tempfile.replace('\\', '/')
 
     def download_links(self, links, referer):
