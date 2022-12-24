@@ -515,7 +515,8 @@ class Zimuku_Agent:
             ts, os.path.splitext(filename)[1])).replace('\\', '/')
         with open(tempfile, "wb") as sub_file:
             sub_file.write(data)
-            # use fsync to ensure the file.
+            # use flush followed by fsync to ensure the file.
+            sub_file.flush()
             os.fsync(sub_file.fileno())
         return tempfile.replace('\\', '/')
 
