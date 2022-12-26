@@ -57,19 +57,27 @@ class Unpacker:
         return zimuku_archive.unpack(path)
 
 
-def Search(items):
-    user_year = __addon__.getSetting("useyear")
-    search_suffix = ' '+items['year'] if user_year == 'true' else ''
-    if items['mansearch']:
-        search_str = items['mansearchstr']
-    elif items['tvshow'] != '':
-        search_str = items['tvshow']+search_suffix
+def Search(item):
+    if item['mansearch']:
+        search_str = item['mansearchstr']
+    elif item['tvshow'] != '':
+        search_str = item['tvshow']
     else:
-        search_str = items['title']+search_suffix
+        search_str = item['title']
     logger.log(sys._getframe().f_code.co_name, "Search for [%s], item: %s" %
-               (os.path.basename(items['file_original_path']), items), level=xbmc.LOGINFO)
+               (os.path.basename(item['file_original_path']), item), level=xbmc.LOGINFO)
 
-    subtitle_list = agent.search(search_str, items)
+    subtitle_list = agent.search(search_str, item)
+
+    # 粗略过滤当前集数的字幕
+    try:
+        episode = int(item['episode'])
+        es = 'E%02d' % episode
+        filtered = [s for s in subtitle_list if es in s['filename'].upper()]
+        if len(filtered) > 0:
+            subtitle_list = filtered
+    except:
+        pass
 
     if len(subtitle_list) != 0:
         for s in subtitle_list:
@@ -89,13 +97,10 @@ def Search(items):
                 url=url, listitem=listitem, isFolder=False)
     else:
         logger.log(sys._getframe().f_code.co_name, "字幕未找到，参数：%s" %
-                   items, level=xbmc.LOGINFO)
+                   item, level=xbmc.LOGINFO)
 
 
 def Download(url):
-    """
-    调用 agent 的下载功能，用户在 UI 选定之后传回给 Kodi
-    """
     if not xbmcvfs.exists(__temp__.replace('\\', '/')):
         xbmcvfs.mkdirs(__temp__)
     dirs, files = xbmcvfs.listdir(__temp__)
@@ -104,10 +109,9 @@ def Download(url):
 
     logger.log(sys._getframe().f_code.co_name, "Download page: %s" % (url))
 
-    l1, l2, l3 = agent.download(url)
-    logger.log(sys._getframe().f_code.co_name, "%s; %s; %s" % (l1, l2, l3))
-    sub_name_list, short_sub_name_list, sub_file_list = agent.get_preferred_subs(
-        l1, l2, l3)
+    l1, l2 = agent.download(url)
+    logger.log(sys._getframe().f_code.co_name, "%s; %s" % (l1, l2))
+    sub_name_list, sub_file_list = agent.get_preferred_subs(l1, l2)
 
     if len(sub_name_list) == 0:
         # FIXME: 不应该有这问题
@@ -115,9 +119,16 @@ def Download(url):
     if len(sub_name_list) == 1:
         selected_sub = sub_file_list[0]
     else:
-        cut_fn = __addon__.getSetting("cutsubfn")
-        sel = xbmcgui.Dialog().select('请选择压缩包中的字幕', short_sub_name_list if cut_fn ==
-                                      'true' else sub_name_list)
+        # 不显示相同的前缀，防止文件名过长滚动
+        shortest_fn = min(sub_name_list, key=len)
+        diff_index = next(filter(
+            lambda i: any(s[i] != shortest_fn[i] for s in sub_name_list),
+            range(len(shortest_fn))
+        ))
+        dot = shortest_fn[:diff_index].rfind('.') + 1
+        sub_name_list = [s[dot:] for s in sub_name_list]
+
+        sel = xbmcgui.Dialog().select('请选择压缩包中的字幕', sub_name_list)
         if sel == -1:
             sel = 0
         selected_sub = sub_file_list[sel]
@@ -147,10 +158,6 @@ def get_params():
 
 
 def handle_params(params):
-    """
-    对应界面上的按钮/功能，一个是搜索，一个是下载
-    """
-
     if params['action'] == 'search' or params['action'] == 'manualsearch':
         item = {'temp': False, 'rar': False, 'mansearch': False}
         item['year'] = xbmc.getInfoLabel("VideoPlayer.Year")  # Year
@@ -221,11 +228,6 @@ def run():
     zimuku_base_url = __addon__.getSetting("ZiMuKuUrl")
     tpe = __addon__.getSetting("subtype")
     lang = __addon__.getSetting("sublang")
-
-    if __addon__.getSetting("proxy_follow_kodi") != "true":
-        proxy = ("" if __addon__.getSetting("proxy_use") != "true"
-                 else __addon__.getSetting("proxy_server"))
-        os.environ["HTTP_PROXY"] = os.environ["HTTPS_PROXY"] = proxy
 
     agent = zmkagnt.Zimuku_Agent(zimuku_base_url, __temp__, logger, Unpacker(),
                                  {'subtype': tpe, 'sublang': lang})
