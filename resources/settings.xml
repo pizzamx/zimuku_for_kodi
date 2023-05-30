@@ -14,7 +14,7 @@
                 		<allowempty>false</allowempty>
                 	</constraints>
                 </setting>
-				 <setting id="assess_token" type="string" label="301011" help="">
+				 <setting id="ocr_url" type="string" label="301011" help="">
                 	<level>0</level>
 					<control type="edit" format="string">
 						<heading>301011</heading>
