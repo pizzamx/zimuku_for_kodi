@@ -114,13 +114,15 @@ class Zimuku_Agent:
             a = requests.adapters.HTTPAdapter(max_retries=3)
             s.mount('https://', a)
 
-            self.logger.log(sys._getframe().f_code.co_name, 'requests GET [%s]' % (url), level=3)
+            self.logger.log(sys._getframe().f_code.co_name,
+                            '[CHALLENGE VERI-CODE] requests GET [%s]' % (url), level=3)
 
             http_response = s.get(url, headers=request_headers)
 
             if http_response.status_code != 200:
                 soup = BeautifulSoup(http_response.content, 'html.parser')
-                content = soup.find_all(attrs={'class': 'verifyimg'})[0].get('src')
+                content = soup.find_all(attrs={'class': 'verifyimg'})[
+                    0].get('src')
                 if content is not None:
                     # 处理编码
                     ocrurl = self.ocrUrl
@@ -128,7 +130,8 @@ class Zimuku_Agent:
                     headers = {
                         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.54 Safari/537.36'
                     }
-                    response = requests.request("POST", ocrurl, headers=headers, json=payload)
+                    response = requests.request(
+                        "POST", ocrurl, headers=headers, json=payload)
                     result_json = json.loads(response.text)
                     text = ''
                     if result_json['code'] == 1:
@@ -143,13 +146,15 @@ class Zimuku_Agent:
                         i = i + 1
 
                     # 使用带验证码的访问
-                    get_cookie_url = '%s%s&%s' % (url, append, 'security_verify_img=' + str1.replace('0x', ''))
-                    http_response = s.get(get_cookie_url, headers=request_headers)
+                    get_cookie_url = '%s%s&%s' % (
+                        url, append, 'security_verify_img=' + str1.replace('0x', ''))
+                    http_response = s.get(
+                        get_cookie_url, headers=request_headers)
                     a = 1
 
         except Exception as e:
             self.logger.log(sys._getframe().f_code.co_name,
-                            "ERROR READING %s: %s" % (url, e), level=3)
+                            "ERROR CHALLENGING VERI-CODE(target URL: %s): %s" % (url, e), level=3)
 
     def extract_sub_info(self, sub, lang_info_mode):
         """

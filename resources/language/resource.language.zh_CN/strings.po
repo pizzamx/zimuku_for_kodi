@@ -11,7 +11,7 @@ msgstr "网址"
 
 msgctxt "#301011"
 msgid "OCR URL"
-msgstr "OCR-API地址"
+msgstr "OCR API 的地址（请勿随意修改）"
 
 msgctxt "#30200"
 msgid "Sub preference"
