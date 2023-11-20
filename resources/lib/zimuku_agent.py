@@ -43,6 +43,7 @@ class Zimuku_Agent:
         self.session = requests.Session()
         self.vertoken = ''
         self.ocrUrl = ocrUrl
+        self.retry_times = 0
 
         # 一次性调用，获取那个vertoken。目测这东西会过期，不过不管那么多了，感觉过两天验证机制又要变
         # self.init_site()
@@ -76,20 +77,29 @@ class Zimuku_Agent:
         s = self.session
         try:
             request_headers = {'User-Agent': self.ua}
+
             if kwargs:
                 for key, value in list(kwargs.items()):
                     request_headers[key.replace('_', '-')] = value
 
             a = requests.adapters.HTTPAdapter(max_retries=3)
             s.mount('http://', a)
+            if 'security_verify_data' not in url:
+                url += '&' if '?' in url else '?'
+                url += 'security_verify_data=313932302c31303830'
 
-            # url += '&' if '?' in url else '?'
-            # url += 'security_verify_data=313932302c31303830'
-
-            self.logger.log(sys._getframe().f_code.co_name,
-                            'requests GET [%s]' % (url), level=3)
-
+            self.logger.log(sys._getframe().f_code.co_name, 'requests GET [%s]' % (url), level=3)
+            cookie = {'srcurl': bytes(url, 'utf-8').hex()}
+            s.cookies.update(cookie)
             http_response = s.get(url, headers=request_headers)
+            if http_response.status_code == 404:
+                if self.retry_times < 15:
+                    s.close()
+                    self.retry_times += 1
+                    return self.get_page(url)
+                else:
+                    self.retry_times = 0
+
             """
             if http_response.status_code != 200:
                 s.get(url, headers=request_headers)
@@ -99,9 +109,8 @@ class Zimuku_Agent:
             headers = http_response.headers
             http_body = http_response.content
         except Exception as e:
-            self.logger.log(sys._getframe().f_code.co_name,
-                            "ERROR READING %s: %s" % (url, e), level=3)
-
+            self.logger.log(sys._getframe().f_code.co_name, "ERROR READING %s: %s" % (url, e), level=3)
+        s.close()
         return headers, http_body
 
     def verify(self, url, append):
@@ -110,19 +119,13 @@ class Zimuku_Agent:
         s = self.session
         try:
             request_headers = {'User-Agent': self.ua}
-
             a = requests.adapters.HTTPAdapter(max_retries=3)
             s.mount('https://', a)
-
-            self.logger.log(sys._getframe().f_code.co_name,
-                            '[CHALLENGE VERI-CODE] requests GET [%s]' % (url), level=3)
-
+            self.logger.log(sys._getframe().f_code.co_name, '[CHALLENGE VERI-CODE] requests GET [%s]' % (url), level=3)
             http_response = s.get(url, headers=request_headers)
-
             if http_response.status_code != 200:
                 soup = BeautifulSoup(http_response.content, 'html.parser')
-                content = soup.find_all(attrs={'class': 'verifyimg'})[
-                    0].get('src')
+                content = soup.find_all(attrs={'class': 'verifyimg'})[0].get('src')
                 if content is not None:
                     # 处理编码
                     ocrurl = self.ocrUrl
@@ -146,10 +149,8 @@ class Zimuku_Agent:
                         i = i + 1
 
                     # 使用带验证码的访问
-                    get_cookie_url = '%s%s&%s' % (
-                        url, append, 'security_verify_img=' + str1.replace('0x', ''))
-                    http_response = s.get(
-                        get_cookie_url, headers=request_headers)
+                    get_cookie_url = '%s%s&%s' % (url, append, 'security_verify_img=' + str1.replace('0x', ''))
+                    http_response = s.get(get_cookie_url, headers=request_headers)
                     a = 1
 
         except Exception as e:
@@ -233,8 +234,7 @@ class Zimuku_Agent:
         elif 'English' in langs:
             lang_vals = ['English', 'en']
         else:
-            self.logger.log(sys._getframe().f_code.co_name,
-                            "Unrecognized lang: %s" % (langs))
+            self.logger.log(sys._getframe().f_code.co_name, "Unrecognized lang: %s" % (langs))
             lang_vals = ['Unknown', '']
 
         return {
@@ -291,32 +291,28 @@ class Zimuku_Agent:
             # self.get_page(get_cookie_url)
 
             # 处理验证码逻辑
-            self.verify(url, '&chost=zimuku.org')
+            # self.verify(url, '&chost=srtku.com')
 
             # 真正的搜索
-            self.logger.log(sys._getframe().f_code.co_name,
-                            "Search API url: %s" % (url))
+            self.logger.log(sys._getframe().f_code.co_name, "Search API url: %s" % (url))
 
-            url += '&chost=zimuku.org'
+            # url += '&chost=srtku.com'
             _, data = self.get_page(url)
             soup = BeautifulSoup(data, 'html.parser')
         except Exception as e:
-            self.logger.log(sys._getframe().f_code.co_name, 'ERROR SEARCHING, E=(%s: %s)' %
-                            (Exception, e), level=3)
+            self.logger.log(sys._getframe().f_code.co_name, 'ERROR SEARCHING, E=(%s: %s)' % (Exception, e), level=3)
             return []
 
-        s_e = 'S%02dE%02d' % (int(items['season']), int(items['episode'])
-                              ) if items['season'] != '' and items['episode'] != '' else 'N/A'
+        s_e = 'S%02dE%02d' % (int(items['season']), int(items['episode'])) if items['season'] != '' and items['episode'] != '' else 'N/A'
         if s_e != 'N/A':
             # 1. 从搜索结果中看看是否能直接找到
             sub_list = soup.find_all('tr')
-            self.logger.log(sys._getframe().f_code.co_name, "to find [%s] in %s" % (
-                s_e, [ep.a.text for ep in sub_list]))
+            self.logger.log(sys._getframe().f_code.co_name, "to find [%s] in %s" % (s_e, [ep.a.text for ep in sub_list]))
             for sub in reversed(sub_list):
                 sub_name = sub.a.text
                 if s_e in sub_name.upper():
                     subtitle_list.append(self.extract_sub_info(sub, 1))
-                    # break  还是全列出来吧
+                    break
 
         if len(subtitle_list) != 0:
             return self.double_filter(subtitle_list, items)
@@ -493,7 +489,7 @@ class Zimuku_Agent:
         下载并返回字幕文件列表
 
         Params:
-            url    字幕详情页面，如 http://zimuku.org/detail/155262.html
+            url    字幕详情页面，如 http://srtku.com/detail/155262.html
 
         Return:
             [], [], []  返回 3 个列表
@@ -507,7 +503,7 @@ class Zimuku_Agent:
                                   ".gz", ".xz", ".iso", ".tgz", ".tbz2", ".cbr")
         try:
             # 处理验证码逻辑
-            self.verify(url, '?')
+            # self.verify(url, '?')
 
             # Subtitle detail page.
             headers, data = self.get_page(url)
@@ -518,7 +514,7 @@ class Zimuku_Agent:
                 url = urllib.parse.urljoin(self.ZIMUKU_BASE, url)
 
             # 处理验证码逻辑
-            self.verify(url, '?')
+            # self.verify(url, '?')
 
             # Subtitle download-list page.
             headers, data = self.get_page(url)
@@ -637,7 +633,7 @@ class Zimuku_Agent:
                                 "DOWNLOAD SUBTITLE: %s" % (url))
 
                 # 处理验证码逻辑
-                self.verify(url, '?')
+                # self.verify(url, '?')
 
                 # Download subtitle one by one until success.
                 headers, data = self.get_page(url, Referer=referer)
