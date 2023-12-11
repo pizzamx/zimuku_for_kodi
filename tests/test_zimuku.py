@@ -48,7 +48,7 @@ class TestZimukuAgent(unittest.TestCase):
 
     def get_agent(self, settings):
         return zmkagnt.Zimuku_Agent(
-            'http://zimuku.org', tmp_folder, Logger(),
+            'https://srtku.com', tmp_folder, Logger(),
             Unpacker(tmp_folder),
             settings)
 
@@ -87,6 +87,15 @@ class TestZimukuAgent(unittest.TestCase):
         result = agent.search(items['tvshow'], items)
         self.assertEqual(len(result), 2)
 
+    def test_search4(self):
+        # 测试整季字幕被打包成一个文件的情况
+        agent = self.get_agent({'subtype': 'srt', 'sublang': 'dualchs'})
+
+        items = {'temp': False, 'rar': False, 'mansearch': False, 'year': '2001', 'season': '5', 'episode': '4', 'tvshow': 'South Park', 'title': 'Scott Tenorman Must Die',
+                 'file_original_path': 'C:\\South.Park.S05E04.Scott Tenorman Must Die (1920x1080) [Phr0stY].mkv', '3let_language': ['chi', '', 'eng']}
+        result = agent.search(items['tvshow'], items)
+        self.assertEqual(len(result), 2)
+
     def test_deep_search(self):
         # 搜索不在第一页的字幕
         agent = self.get_agent({'subtype': 'srt', 'sublang': 'dualchs'})
@@ -115,7 +124,7 @@ class TestZimukuAgent(unittest.TestCase):
         # 测试下载功能
         agent = self.get_agent({'subtype': 'none', 'sublang': 'none'})
 
-        l1, l2, l3 = agent.download('http://zimuku.org/detail/154168.html')
+        l1, l2, l3 = agent.download('https://srtku.com/detail/154168.html')
         self.assertIsNotNone(l1)
         self.assertIsNotNone(l3)
         self.assertEqual(len(l1), 9)
@@ -155,10 +164,10 @@ class TestZimukuAgent(unittest.TestCase):
     def test_garbled_archive(self):
         # 测试文件名乱码的压缩包是否能正确处理
         agent = self.get_agent({'subtype': 'none', 'sublang': 'none'})
-        url = 'http://zimuku.org/detail/154168.html'    # 乱码字幕
+        url = 'https://srtku.com/detail/154168.html'    # 乱码字幕
         l1, _, _ = agent.download(url)
         self.assertIn('young.sheldon.s04e18.720p.hdtv.x264-syncopy.英文.srt', l1)
-        url = 'http://zimuku.org/detail/155101.html'    # 正常字幕
+        url = 'https://srtku.com/detail/155101.html'    # 正常字幕
         l1, _, _ = agent.download(url)
         self.assertIn('black.monday.s03e01.720p.web.h264-ggez.繁体.srt', l1)
 
@@ -166,7 +175,7 @@ class TestZimukuAgent(unittest.TestCase):
         # 测试文件名是否能被正确截短
         agent = self.get_agent(
             {'subtype': 'none', 'sublang': 'none'})
-        url = 'http://zimuku.org/detail/155101.html'
+        url = 'https://srtku.com/detail/155101.html'
         l1, l2, _ = agent.download(url)
         for fn in l1:
             self.assertIn('black.monday.s03e01.720p.web.h264-ggez', fn)
