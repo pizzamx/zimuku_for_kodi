@@ -1,3 +1,6 @@
+v0.2b(2024/4/6)
+- 又改回验证码分支了，需要自行架设一个百度的服务，参考 https://cloud.baidu.com/doc/OCR/s/dk3iqnq51
+
 v0.2(2023/5/30)
 - Merged https://github.com/pizzamx/zimuku_for_kodi/pull/18（感谢 @lm317379829 解决了验证码，以及好厉害的服务）
 

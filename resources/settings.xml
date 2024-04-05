@@ -19,7 +19,7 @@
 					<control type="edit" format="string">
 						<heading>301011</heading>
 					</control>
-                	<default>https://ddddocr.lm317379829.repl.co/</default>
+                	<default>https://aip.baidubce.com/rest/2.0/ocr/v1/numbers?access_token=YOUR_BAIDU_ACCESS_TOKEN</default>
                 	<constraints>
                 		<allowempty>false</allowempty>
                 	</constraints>

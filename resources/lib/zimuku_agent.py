@@ -29,7 +29,7 @@ from bs4 import BeautifulSoup
 
 
 class Zimuku_Agent:
-    def __init__(self, base_url, dl_location, logger, unpacker, settings, ocrUrl='https://ddddocr.lm317379829.repl.co/'):
+    def __init__(self, base_url, dl_location, logger, unpacker, settings, ocrUrl):
         self.ua = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)'
         self.ZIMUKU_BASE = base_url
         # self.ZIMUKU_API = '%s/search?q=%%s&vertoken=%%s' % base_url
@@ -126,16 +126,20 @@ class Zimuku_Agent:
                 if content is not None:
                     # 处理编码
                     ocrurl = self.ocrUrl
-                    payload = {'imgdata': content}
+                    payload = {'image': content}
                     headers = {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.54 Safari/537.36'
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.54 Safari/537.36',
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Accept': 'application/json'
                     }
                     response = requests.request(
-                        "POST", ocrurl, headers=headers, json=payload)
+                        "POST", ocrurl, headers=headers, data=payload)
                     result_json = json.loads(response.text)
-                    text = ''
-                    if result_json['code'] == 1:
-                        text = result_json['result']
+                    try:
+                        text = result_json['words_result'][0]['words']
+                    except Exception as e:
+                        self.logger.log(sys._getframe().f_code.co_name, "ERROR CHALLENGING CAPTCHA(SERVICE CODE: %s, MSG: %s" % (result_json['error_code'], result_json['error_msg']), level=3)
+                        return
                     str1 = ''
                     i = 0
                     for ch in text:
@@ -144,7 +148,6 @@ class Zimuku_Agent:
                         else:
                             str1 += hex(ord(text[i]))
                         i = i + 1
-
                     # 使用带验证码的访问
                     get_cookie_url = '%s%s&%s' % (
                         url, append, 'security_verify_img=' + str1.replace('0x', ''))
