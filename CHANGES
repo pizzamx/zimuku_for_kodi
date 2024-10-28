@@ -1,6 +1,5 @@
-v0.2b(2024/10/28)
+v0.2c(2024/10/28)
 - 增加腾讯 OCR 服务，参考: https://console.cloud.tencent.com/ocr/overview
-- 服务选择规则：如果填了 TENCENT OCR SECRET ID，就用腾讯，否则用百度
 - 输入百度 token 的时候不需要前面一串 URL 了
 
 v0.2b(2024/4/6)

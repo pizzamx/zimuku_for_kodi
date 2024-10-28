@@ -229,13 +229,15 @@ def run():
                  else __addon__.getSetting("proxy_server"))
         os.environ["HTTP_PROXY"] = os.environ["HTTPS_PROXY"] = proxy
 
-    ocrAT = __addon__.getSetting("bidu_ocr_at")
-    ocrVender = 'BIDU'
+    ocrVender = __addon__.getSetting("ocr_select")
+
     txID = __addon__.getSetting("tc_ocr_id")
     txKEY = __addon__.getSetting("tc_ocr_key")
-    if txID != '':
+    
+    ocrAT = __addon__.getSetting("bidu_ocr_at")
+
+    if ocrVender == 'TC':
         ocrAT = txID + ';' + txKEY
-        ocrVender = 'TC'
 
     # 查询
     agent = zmkagnt.Zimuku_Agent(zimuku_base_url, __temp__, logger, Unpacker(),

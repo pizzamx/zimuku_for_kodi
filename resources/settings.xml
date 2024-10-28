@@ -14,7 +14,20 @@
                 		<allowempty>false</allowempty>
                 	</constraints>
                 </setting>
-				 <setting id="bidu_ocr_url" type="string" label="30111" help="">
+				<setting id="ocr_select" type="string" label="30110" help="">
+					<level>0</level>
+					<default>1</default>
+					<constraints>
+						<options>
+							<option label="301101">BIDU</option>
+							<option label="301102">TC</option>
+						</options>
+					</constraints>
+					<control type="list" format="string">
+						<heading>30110</heading>
+					</control>
+				</setting>				
+				<setting id="bidu_ocr_url" type="string" label="30111" help="">
                 	<level>0</level>
 					<control type="edit" format="string">
 						<heading>301011</heading>

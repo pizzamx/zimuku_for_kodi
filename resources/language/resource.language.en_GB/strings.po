@@ -9,6 +9,18 @@ msgctxt "#30101"
 msgid "Site URL"
 msgstr ""
 
+msgctxt "#30110"
+msgid "OCR SERVICE"
+msgstr "OCR SERVICE PROVIDER"
+
+msgctxt "#301101"
+msgid "BIDU"
+msgstr "BAIDU"
+
+msgctxt "#301102"
+msgid "TC"
+msgstr "TENCENT"
+
 msgctxt "#30111"
 msgid "BAIDU OCR TOKEN"
 msgstr "BAIDU OCR TOKEN: access_token="
