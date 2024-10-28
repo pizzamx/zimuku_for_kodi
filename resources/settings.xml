@@ -14,14 +14,34 @@
                 		<allowempty>false</allowempty>
                 	</constraints>
                 </setting>
-				 <setting id="ocr_url" type="string" label="301011" help="">
+				 <setting id="bidu_ocr_url" type="string" label="30111" help="">
                 	<level>0</level>
 					<control type="edit" format="string">
 						<heading>301011</heading>
 					</control>
-                	<default>https://aip.baidubce.com/rest/2.0/ocr/v1/numbers?access_token=YOUR_BAIDU_ACCESS_TOKEN</default>
+                	<default>YOUR_BAIDU_ACCESS_TOKEN</default>
                 	<constraints>
-                		<allowempty>false</allowempty>
+                		<allowempty>true</allowempty>
+                	</constraints>
+                </setting>
+				 <setting id="tc_ocr_id" type="string" label="30112" help="">
+                	<level>0</level>
+					<control type="edit" format="string">
+						<heading>30112</heading>
+					</control>
+                	<default>YOUR_TENCENT_SECRET_ID</default>
+                	<constraints>
+                		<allowempty>true</allowempty>
+                	</constraints>
+                </setting>
+				 <setting id="tc_ocr_key" type="string" label="30113" help="">
+                	<level>0</level>
+					<control type="edit" format="string">
+						<heading>30113</heading>
+					</control>
+                	<default>YOUR_TENCENT_SECRET_KEY</default>
+                	<constraints>
+                		<allowempty>true</allowempty>
                 	</constraints>
                 </setting>
 			</group>

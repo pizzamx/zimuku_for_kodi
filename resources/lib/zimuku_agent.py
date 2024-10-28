@@ -25,11 +25,18 @@ import json
 import base64
 import urllib
 import requests
+import hashlib
+import hmac
+from datetime import datetime
+if sys.version_info[0] <= 2:
+    from httplib import HTTPSConnection
+else:
+    from http.client import HTTPSConnection
 from bs4 import BeautifulSoup
 
 
 class Zimuku_Agent:
-    def __init__(self, base_url, dl_location, logger, unpacker, settings, ocrUrl):
+    def __init__(self, base_url, dl_location, logger, unpacker, settings, ocrAT):
         self.ua = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)'
         self.ZIMUKU_BASE = base_url
         # self.ZIMUKU_API = '%s/search?q=%%s&vertoken=%%s' % base_url
@@ -39,10 +46,12 @@ class Zimuku_Agent:
 
         self.logger = logger
         self.unpacker = unpacker
+        settings['BIDU_URL'] = 'https://aip.baidubce.com/rest/2.0/ocr/v1/numbers?access_token='
+        settings['TC_URL'] = 'https://ocr.tencentcloudapi.com'
         self.plugin_settings = settings
         self.session = requests.Session()
         self.vertoken = ''
-        self.ocrUrl = ocrUrl
+        self.ocrAT = ocrAT
 
         # 一次性调用，获取那个vertoken。目测这东西会过期，不过不管那么多了，感觉过两天验证机制又要变
         # self.init_site()
@@ -95,6 +104,9 @@ class Zimuku_Agent:
                 s.get(url, headers=request_headers)
                 http_response = s.get(url, headers=request_headers)
             """
+            if 'class="verifyimg"' in str(http_response.content):
+                self.verify(url)
+                http_response = s.get(url, headers=request_headers)
 
             headers = http_response.headers
             http_body = http_response.content
@@ -104,42 +116,116 @@ class Zimuku_Agent:
 
         return headers, http_body
 
-    def verify(self, url, append):
+    def sign(self, key, msg):
+        return hmac.new(key, msg.encode("utf-8"), hashlib.sha256).digest()
+
+    def verify(self, url):
         headers = None
         http_body = None
-        s = self.session
+        session = self.session
         try:
             request_headers = {'User-Agent': self.ua}
 
             a = requests.adapters.HTTPAdapter(max_retries=3)
-            s.mount('https://', a)
+            session.mount('https://', a)
 
             self.logger.log(sys._getframe().f_code.co_name,
                             '[CHALLENGE VERI-CODE] requests GET [%s]' % (url), level=3)
 
-            http_response = s.get(url, headers=request_headers)
+            http_response = session.get(url, headers=request_headers)
 
             if http_response.status_code != 200:
                 soup = BeautifulSoup(http_response.content, 'html.parser')
-                content = soup.find_all(attrs={'class': 'verifyimg'})[
+                imgSrc = soup.find_all(attrs={'class': 'verifyimg'})[
                     0].get('src')
-                if content is not None:
+                if imgSrc is not None:
                     # 处理编码
-                    ocrurl = self.ocrUrl
-                    payload = {'image': content}
-                    headers = {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.54 Safari/537.36',
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'Accept': 'application/json'
-                    }
-                    response = requests.request(
-                        "POST", ocrurl, headers=headers, data=payload)
-                    result_json = json.loads(response.text)
-                    try:
-                        text = result_json['words_result'][0]['words']
-                    except Exception as e:
-                        self.logger.log(sys._getframe().f_code.co_name, "ERROR CHALLENGING CAPTCHA(SERVICE CODE: %s, MSG: %s" % (result_json['error_code'], result_json['error_msg']), level=3)
-                        return
+                    ocrAT = self.ocrAT
+                    ocrVender = self.plugin_settings['ocrvender']
+                    text = ''
+                    if ocrVender == 'BIDU':
+                        payload = {'image': imgSrc}
+                        headers = {
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.54 Safari/537.36',
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'Accept': 'application/json'
+                        }
+                        response = requests.request(
+                            "POST", ocrAT, headers=headers, data=payload)
+                        result_json = json.loads(response.text)
+                        try:
+                            text = result_json['words_result'][0]['words']
+                            self.logger.log(sys._getframe().f_code.co_name, '[CHALLENGE VERI-CODE] RETURN [%s]' % (text), level=3)
+                        except Exception as e:
+                            self.logger.log(sys._getframe().f_code.co_name, "ERROR CHALLENGING CAPTCHA(SERVICE CODE: %s, MSG: %s" % (result_json['error_code'], result_json['error_msg']), level=3)
+                            return
+                    elif ocrVender == 'TC':
+                        parts = self.ocrAT.split(';')
+                        secret_id = parts[0]
+                        secret_key = parts[1]
+
+                        service = "ocr"
+                        host = "ocr.tencentcloudapi.com"
+                        region = "ap-guangzhou"
+                        version = "2018-11-19"
+                        action = "GeneralBasicOCR"
+                        payload = "{\"ImageBase64\":\"" + imgSrc.split('data:image/bmp;base64,')[1] +"\"}"
+                        params = json.loads(payload)
+                        endpoint = self.plugin_settings['TC_URL']
+                        algorithm = "TC3-HMAC-SHA256"
+                        timestamp = int(time.time())
+                        date = datetime.utcfromtimestamp(timestamp).strftime("%Y-%m-%d")
+
+                        http_request_method = "POST"
+                        canonical_uri = "/"
+                        canonical_querystring = ""
+                        ct = "application/json; charset=utf-8"
+                        canonical_headers = "content-type:%s\nhost:%s\nx-tc-action:%s\n" % (ct, host, action.lower())
+                        signed_headers = "content-type;host;x-tc-action"
+                        hashed_request_payload = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+                        canonical_request = (http_request_method + "\n" +
+                                            canonical_uri + "\n" +
+                                            canonical_querystring + "\n" +
+                                            canonical_headers + "\n" +
+                                            signed_headers + "\n" +
+                                            hashed_request_payload)
+
+                        credential_scope = date + "/" + service + "/" + "tc3_request"
+                        hashed_canonical_request = hashlib.sha256(canonical_request.encode("utf-8")).hexdigest()
+                        string_to_sign = (algorithm + "\n" +
+                                        str(timestamp) + "\n" +
+                                        credential_scope + "\n" +
+                                        hashed_canonical_request)
+
+                        secret_date = self.sign(("TC3" + secret_key).encode("utf-8"), date)
+                        secret_service = self.sign(secret_date, service)
+                        secret_signing = self.sign(secret_service, "tc3_request")
+                        signature = hmac.new(secret_signing, string_to_sign.encode("utf-8"), hashlib.sha256).hexdigest()
+
+                        authorization = (algorithm + " " +
+                                        "Credential=" + secret_id + "/" + credential_scope + ", " +
+                                        "SignedHeaders=" + signed_headers + ", " +
+                                        "Signature=" + signature)
+
+                        headers = {
+                            "Authorization": authorization,
+                            "Content-Type": "application/json; charset=utf-8",
+                            "Host": host,
+                            "X-TC-Action": action,
+                            "X-TC-Timestamp": timestamp,
+                            "X-TC-Version": version,
+                            "X-TC-Region": region
+                        }
+
+                        try:
+                            req = HTTPSConnection(host)
+                            req.request("POST", "/", headers=headers, body=payload.encode("utf-8"))
+                            resp = req.getresponse()
+                            result_json = json.loads(resp.read().decode('utf-8'))
+                            text = result_json['Response']['TextDetections'][0]['DetectedText']
+                            text = text.replace(' ', '')
+                        except Exception as err:
+                            print(err)
                     str1 = ''
                     i = 0
                     for ch in text:
@@ -149,11 +235,11 @@ class Zimuku_Agent:
                             str1 += hex(ord(text[i]))
                         i = i + 1
                     # 使用带验证码的访问
+                    sep_char = '&' if '?' in url else '?'
                     get_cookie_url = '%s%s&%s' % (
-                        url, append, 'security_verify_img=' + str1.replace('0x', ''))
-                    http_response = s.get(
+                        url, sep_char, 'security_verify_img=' + str1.replace('0x', ''))
+                    http_response = session.get(
                         get_cookie_url, headers=request_headers)
-                    a = 1
 
         except Exception as e:
             self.logger.log(sys._getframe().f_code.co_name,
@@ -294,13 +380,13 @@ class Zimuku_Agent:
             # self.get_page(get_cookie_url)
 
             # 处理验证码逻辑
-            self.verify(url, '&chost=zimuku.org')
+            #self.verify(url, '&chost=zimuku.org')
 
             # 真正的搜索
             self.logger.log(sys._getframe().f_code.co_name,
                             "Search API url: %s" % (url))
 
-            url += '&chost=zimuku.org'
+            #url += '&chost=zimuku.org'
             _, data = self.get_page(url)
             soup = BeautifulSoup(data, 'html.parser')
         except Exception as e:
@@ -308,8 +394,10 @@ class Zimuku_Agent:
                             (Exception, e), level=3)
             return []
 
-        s_e = 'S%02dE%02d' % (int(items['season']), int(items['episode'])
-                              ) if items['season'] != '' and items['episode'] != '' else 'N/A'
+        s_e = s_e_CN = 'N/A'
+        if items['season'] != '' and items['episode'] != '':
+            s_e = 'S%02dE%02d' % (int(items['season']), int(items['episode']))
+            s_e_CN = '第%d季第%d集' % (int(items['season']), int(items['episode']))
         if s_e != 'N/A':
             # 1. 从搜索结果中看看是否能直接找到
             sub_list = soup.find_all('tr')
@@ -317,7 +405,7 @@ class Zimuku_Agent:
                 s_e, [ep.a.text for ep in sub_list]))
             for sub in reversed(sub_list):
                 sub_name = sub.a.text
-                if s_e in sub_name.upper():
+                if s_e in sub_name.upper() or s_e_CN in sub_name:
                     subtitle_list.append(self.extract_sub_info(sub, 1))
                     # break  还是全列出来吧
 
@@ -365,7 +453,7 @@ class Zimuku_Agent:
                 subs = soup.tbody.find_all("tr")
                 for sub in reversed(subs):
                     sub_name = sub.a.text
-                    if s_e in sub_name.upper():
+                    if s_e in sub_name.upper() or s_e_CN in sub_name:
                         subtitle_list.append(self.extract_sub_info(sub, 2))
                 # 如果匹配到了季，那就得返回了，没有就是没有
                 return self.double_filter(subtitle_list, items)
@@ -510,7 +598,7 @@ class Zimuku_Agent:
                                   ".gz", ".xz", ".iso", ".tgz", ".tbz2", ".cbr")
         try:
             # 处理验证码逻辑
-            self.verify(url, '?')
+            #self.verify(url, '?')
 
             # Subtitle detail page.
             headers, data = self.get_page(url)
@@ -521,7 +609,7 @@ class Zimuku_Agent:
                 url = urllib.parse.urljoin(self.ZIMUKU_BASE, url)
 
             # 处理验证码逻辑
-            self.verify(url, '?')
+            #self.verify(url, '&chost=zimuku.org')
 
             # Subtitle download-list page.
             headers, data = self.get_page(url)
@@ -640,7 +728,7 @@ class Zimuku_Agent:
                                 "DOWNLOAD SUBTITLE: %s" % (url))
 
                 # 处理验证码逻辑
-                self.verify(url, '?')
+                #self.verify(url, '?')
 
                 # Download subtitle one by one until success.
                 headers, data = self.get_page(url, Referer=referer)

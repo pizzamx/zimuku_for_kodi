@@ -9,9 +9,17 @@ msgctxt "#30101"
 msgid "Site URL"
 msgstr ""
 
-msgctxt "#301011"
-msgid "OCR URL"
-msgstr "OCR API"
+msgctxt "#30111"
+msgid "BAIDU OCR TOKEN"
+msgstr "BAIDU OCR TOKEN: access_token="
+
+msgctxt "#30112"
+msgid "TENCENT OCR SECRET ID"
+msgstr "TENCENT OCR SECRET ID"
+
+msgctxt "#30113"
+msgid "TENCENT OCR SECRET KEY"
+msgstr "TENCENT OCR SECRET KEY"
 
 msgctxt "#30200"
 msgid "Sub preference"

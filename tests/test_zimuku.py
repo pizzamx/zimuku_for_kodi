@@ -44,17 +44,28 @@ class TestZimukuAgent(unittest.TestCase):
         tmp_folder = tempfile.TemporaryDirectory().name
         os.mkdir(tmp_folder)
 
+        self.base_url = 'http://srtku.com'
+
         return super().setUp()
 
     def get_agent(self, settings):
+        bidu_at = os.environ.get('BIDU_AT')
+        tc_id = os.environ.get('TC_ID')
+        tc_key = os.environ.get('TC_KEY')
         return zmkagnt.Zimuku_Agent(
-            'http://zimuku.org', tmp_folder, Logger(),
+            self.base_url, tmp_folder, Logger(),
             Unpacker(tmp_folder),
-            settings)
+            settings, tc_id + ';' + tc_key)
+
+    def test_pass_captcha(self):
+        agent = self.get_agent({'subtype': 'srt', 'sublang': 'dualchs', 'ocrvender': 'TC'})
+        headers, http_body=agent.get_page(self.base_url)
+        self.assertGreaterEqual(http_body.decode('utf-8').find('<a href="/newsubs">'), 0)
+
 
     def test_search(self):
         # 测试搜索功能
-        agent = self.get_agent({'subtype': 'srt', 'sublang': 'dualchs'})
+        agent = self.get_agent({'subtype': 'srt', 'sublang': 'dualchs', 'ocrvender': 'TC'})
 
         items = {
             'temp': False, 'rar': False, 'mansearch': False, 'year': '2021', 'season': '4',
@@ -67,25 +78,36 @@ class TestZimukuAgent(unittest.TestCase):
 
     def test_search2(self):
         # 测试搜索功能
-        agent = self.get_agent({'subtype': 'srt', 'sublang': 'dualchs'})
+        agent = self.get_agent({'subtype': 'srt', 'sublang': 'dualchs', 'ocrvender': 'TC'})
 
         items = {
-            'temp': False, 'rar': False, 'mansearch': False, 'year': '2010', 'season': '6',
-            'episode': '2', 'tvshow': '唐顿庄园', 'title': 'Episode 2',
-            'file_original_path':
-            'F:\\Downton.Abbey.2010.S06E02.1080p.BluRay.DD.2.0.x265.10bit-monster6688.mkv',
+            'temp': False, 'rar': False, 'mansearch': False, 'year': '1989', 'season': '1', 'episode': '3', 'tvshow': '孤鸽镇', 'title': '草原',
+            'file_original_path': 'F:\\Downton.Abbey.2010.S06E02.1080p.BluRay.DD.2.0.x265.10bit-monster6688.mkv',
             '3let_language': ['', 'eng']}
         result = agent.search(items['tvshow'], items)
         self.assertNotEqual(len(result), 0)
 
     def test_search3(self):
         # 测试对搜索结果再次进行剧集过滤的功能
-        agent = self.get_agent({'subtype': 'srt', 'sublang': 'dualchs'})
+        agent = self.get_agent({'subtype': 'srt', 'sublang': 'dualchs', 'ocrvender': 'TC'})
 
         items = {'temp': False, 'rar': False, 'mansearch': False, 'year': '2022', 'season': '1', 'episode': '1', 'tvshow': 'Reborn Rich', 'title': 'Soonyang’s Loyal Servant',
                  'file_original_path': 'C:\\Reborn.Rich.S01E01.Episode.1.1080p.DSNP.WEB-DL.AAC2.0.H.264-MARK.mkv', '3let_language': ['chi', '', 'eng']}
         result = agent.search(items['tvshow'], items)
         self.assertEqual(len(result), 2)
+
+    def test_search4(self):
+        # 测试搜索——字幕链接只有类似“第7季第8集”的字样
+        agent = self.get_agent({'subtype': 'srt', 'sublang': 'dualchs'})
+
+        items = {
+            'temp': False, 'rar': False, 'mansearch': False, 'year': '2021', 'season': '7',
+            'episode': '8', 'tvshow': '小谢尔顿', 'title': '电子脚镣和塑料垃圾房',
+            'file_original_path':
+            'Young.Sheldon.S07E08.720p.HEVC.x265-MeGusta.mkv',
+            '3let_language': ['eng']}
+        result = agent.search(items['tvshow'], items)
+        self.assertNotEqual(len(result), 0)
 
     def test_deep_search(self):
         # 搜索不在第一页的字幕
@@ -100,7 +122,7 @@ class TestZimukuAgent(unittest.TestCase):
         self.assertEqual(len(result), 3)
 
     def test_search_movie(self):
-        agent = self.get_agent({'subtype': 'srt', 'sublang': 'dualchs'})
+        agent = self.get_agent({'subtype': 'srt', 'sublang': 'dualchs', 'ocrvender': 'TC'})
 
         items = {
             'temp': False, 'rar': False, 'mansearch': False, 'year': '2018', 'season': '',
@@ -115,7 +137,7 @@ class TestZimukuAgent(unittest.TestCase):
         # 测试下载功能
         agent = self.get_agent({'subtype': 'none', 'sublang': 'none'})
 
-        l1, l2, l3 = agent.download('http://zimuku.org/detail/154168.html')
+        l1, l2, l3 = agent.download(self.base_url + '/detail/154168.html')
         self.assertIsNotNone(l1)
         self.assertIsNotNone(l3)
         self.assertEqual(len(l1), 9)
@@ -155,10 +177,10 @@ class TestZimukuAgent(unittest.TestCase):
     def test_garbled_archive(self):
         # 测试文件名乱码的压缩包是否能正确处理
         agent = self.get_agent({'subtype': 'none', 'sublang': 'none'})
-        url = 'http://zimuku.org/detail/154168.html'    # 乱码字幕
+        url = self.base_url + '/detail/154168.html'    # 乱码字幕
         l1, _, _ = agent.download(url)
         self.assertIn('young.sheldon.s04e18.720p.hdtv.x264-syncopy.英文.srt', l1)
-        url = 'http://zimuku.org/detail/155101.html'    # 正常字幕
+        url = self.base_url + '/detail/155101.html'    # 正常字幕
         l1, _, _ = agent.download(url)
         self.assertIn('black.monday.s03e01.720p.web.h264-ggez.繁体.srt', l1)
 
@@ -166,7 +188,7 @@ class TestZimukuAgent(unittest.TestCase):
         # 测试文件名是否能被正确截短
         agent = self.get_agent(
             {'subtype': 'none', 'sublang': 'none'})
-        url = 'http://zimuku.org/detail/155101.html'
+        url = self.base_url + '/detail/155101.html'
         l1, l2, _ = agent.download(url)
         for fn in l1:
             self.assertIn('black.monday.s03e01.720p.web.h264-ggez', fn)
