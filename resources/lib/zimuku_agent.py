@@ -21,22 +21,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 import os
 import sys
 import time
-import json
-import base64
 import urllib
 import requests
-import hashlib
-import hmac
-from datetime import datetime
-if sys.version_info[0] <= 2:
-    from httplib import HTTPSConnection
-else:
-    from http.client import HTTPSConnection
 from bs4 import BeautifulSoup
+from ocr import BmpOcr
 
 
 class Zimuku_Agent:
-    def __init__(self, base_url, dl_location, logger, unpacker, settings, ocrAT):
+    def __init__(self, base_url, dl_location, logger, unpacker, settings):
         self.ua = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)'
         self.ZIMUKU_BASE = base_url
         # self.ZIMUKU_API = '%s/search?q=%%s&vertoken=%%s' % base_url
@@ -46,12 +38,9 @@ class Zimuku_Agent:
 
         self.logger = logger
         self.unpacker = unpacker
-        settings['BIDU_URL'] = 'https://aip.baidubce.com/rest/2.0/ocr/v1/numbers?access_token='
-        settings['TC_URL'] = 'https://ocr.tencentcloudapi.com'
         self.plugin_settings = settings
         self.session = requests.Session()
         self.vertoken = ''
-        self.ocrAT = ocrAT
 
         # 一次性调用，获取那个vertoken。目测这东西会过期，不过不管那么多了，感觉过两天验证机制又要变
         # self.init_site()
@@ -116,9 +105,6 @@ class Zimuku_Agent:
 
         return headers, http_body
 
-    def sign(self, key, msg):
-        return hmac.new(key, msg.encode("utf-8"), hashlib.sha256).digest()
-
     def verify(self, url):
         headers = None
         http_body = None
@@ -139,93 +125,10 @@ class Zimuku_Agent:
                 imgSrc = soup.find_all(attrs={'class': 'verifyimg'})[
                     0].get('src')
                 if imgSrc is not None:
+                    base64 = imgSrc.split('data:image/bmp;base64,')[1]
                     # 处理编码
-                    ocrAT = self.ocrAT
-                    ocrVender = self.plugin_settings['ocrvender']
-                    text = ''
-                    if ocrVender == 'BIDU':
-                        payload = {'image': imgSrc}
-                        headers = {
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.54 Safari/537.36',
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'Accept': 'application/json'
-                        }
-                        response = requests.request(
-                            "POST", ocrAT, headers=headers, data=payload)
-                        result_json = json.loads(response.text)
-                        try:
-                            text = result_json['words_result'][0]['words']
-                            self.logger.log(sys._getframe().f_code.co_name, '[CHALLENGE VERI-CODE] RETURN [%s]' % (text), level=3)
-                        except Exception as e:
-                            self.logger.log(sys._getframe().f_code.co_name, "ERROR CHALLENGING CAPTCHA(SERVICE CODE: %s, MSG: %s" % (result_json['error_code'], result_json['error_msg']), level=3)
-                            return
-                    elif ocrVender == 'TC':
-                        parts = self.ocrAT.split(';')
-                        secret_id = parts[0]
-                        secret_key = parts[1]
-
-                        service = "ocr"
-                        host = "ocr.tencentcloudapi.com"
-                        region = "ap-guangzhou"
-                        version = "2018-11-19"
-                        action = "GeneralBasicOCR"
-                        payload = "{\"ImageBase64\":\"" + imgSrc.split('data:image/bmp;base64,')[1] +"\"}"
-                        params = json.loads(payload)
-                        endpoint = self.plugin_settings['TC_URL']
-                        algorithm = "TC3-HMAC-SHA256"
-                        timestamp = int(time.time())
-                        date = datetime.utcfromtimestamp(timestamp).strftime("%Y-%m-%d")
-
-                        http_request_method = "POST"
-                        canonical_uri = "/"
-                        canonical_querystring = ""
-                        ct = "application/json; charset=utf-8"
-                        canonical_headers = "content-type:%s\nhost:%s\nx-tc-action:%s\n" % (ct, host, action.lower())
-                        signed_headers = "content-type;host;x-tc-action"
-                        hashed_request_payload = hashlib.sha256(payload.encode("utf-8")).hexdigest()
-                        canonical_request = (http_request_method + "\n" +
-                                            canonical_uri + "\n" +
-                                            canonical_querystring + "\n" +
-                                            canonical_headers + "\n" +
-                                            signed_headers + "\n" +
-                                            hashed_request_payload)
-
-                        credential_scope = date + "/" + service + "/" + "tc3_request"
-                        hashed_canonical_request = hashlib.sha256(canonical_request.encode("utf-8")).hexdigest()
-                        string_to_sign = (algorithm + "\n" +
-                                        str(timestamp) + "\n" +
-                                        credential_scope + "\n" +
-                                        hashed_canonical_request)
-
-                        secret_date = self.sign(("TC3" + secret_key).encode("utf-8"), date)
-                        secret_service = self.sign(secret_date, service)
-                        secret_signing = self.sign(secret_service, "tc3_request")
-                        signature = hmac.new(secret_signing, string_to_sign.encode("utf-8"), hashlib.sha256).hexdigest()
-
-                        authorization = (algorithm + " " +
-                                        "Credential=" + secret_id + "/" + credential_scope + ", " +
-                                        "SignedHeaders=" + signed_headers + ", " +
-                                        "Signature=" + signature)
-
-                        headers = {
-                            "Authorization": authorization,
-                            "Content-Type": "application/json; charset=utf-8",
-                            "Host": host,
-                            "X-TC-Action": action,
-                            "X-TC-Timestamp": timestamp,
-                            "X-TC-Version": version,
-                            "X-TC-Region": region
-                        }
-
-                        try:
-                            req = HTTPSConnection(host)
-                            req.request("POST", "/", headers=headers, body=payload.encode("utf-8"))
-                            resp = req.getresponse()
-                            result_json = json.loads(resp.read().decode('utf-8'))
-                            text = result_json['Response']['TextDetections'][0]['DetectedText']
-                            text = text.replace(' ', '')
-                        except Exception as err:
-                            print(err)
+                    ocr = BmpOcr(base64)
+                    text = ocr.recognize()
                     str1 = ''
                     i = 0
                     for ch in text:

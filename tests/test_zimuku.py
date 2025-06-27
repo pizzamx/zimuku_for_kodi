@@ -49,23 +49,20 @@ class TestZimukuAgent(unittest.TestCase):
         return super().setUp()
 
     def get_agent(self, settings):
-        bidu_at = os.environ.get('BIDU_AT')
-        tc_id = os.environ.get('TC_ID')
-        tc_key = os.environ.get('TC_KEY')
         return zmkagnt.Zimuku_Agent(
             self.base_url, tmp_folder, Logger(),
             Unpacker(tmp_folder),
-            settings, tc_id + ';' + tc_key)
+            settings)
 
     def test_pass_captcha(self):
-        agent = self.get_agent({'subtype': 'srt', 'sublang': 'dualchs', 'ocrvender': 'TC'})
+        agent = self.get_agent({'subtype': 'srt', 'sublang': 'dualchs'})
         headers, http_body=agent.get_page(self.base_url)
         self.assertGreaterEqual(http_body.decode('utf-8').find('<a href="/newsubs">'), 0)
 
 
     def test_search(self):
         # 测试搜索功能
-        agent = self.get_agent({'subtype': 'srt', 'sublang': 'dualchs', 'ocrvender': 'TC'})
+        agent = self.get_agent({'subtype': 'srt', 'sublang': 'dualchs'})
 
         items = {
             'temp': False, 'rar': False, 'mansearch': False, 'year': '2021', 'season': '4',
@@ -78,7 +75,7 @@ class TestZimukuAgent(unittest.TestCase):
 
     def test_search2(self):
         # 测试搜索功能
-        agent = self.get_agent({'subtype': 'srt', 'sublang': 'dualchs', 'ocrvender': 'TC'})
+        agent = self.get_agent({'subtype': 'srt', 'sublang': 'dualchs'})
 
         items = {
             'temp': False, 'rar': False, 'mansearch': False, 'year': '1989', 'season': '1', 'episode': '3', 'tvshow': '孤鸽镇', 'title': '草原',
@@ -89,7 +86,7 @@ class TestZimukuAgent(unittest.TestCase):
 
     def test_search3(self):
         # 测试对搜索结果再次进行剧集过滤的功能
-        agent = self.get_agent({'subtype': 'srt', 'sublang': 'dualchs', 'ocrvender': 'TC'})
+        agent = self.get_agent({'subtype': 'srt', 'sublang': 'dualchs'})
 
         items = {'temp': False, 'rar': False, 'mansearch': False, 'year': '2022', 'season': '1', 'episode': '1', 'tvshow': 'Reborn Rich', 'title': 'Soonyang’s Loyal Servant',
                  'file_original_path': 'C:\\Reborn.Rich.S01E01.Episode.1.1080p.DSNP.WEB-DL.AAC2.0.H.264-MARK.mkv', '3let_language': ['chi', '', 'eng']}
@@ -122,7 +119,7 @@ class TestZimukuAgent(unittest.TestCase):
         self.assertEqual(len(result), 3)
 
     def test_search_movie(self):
-        agent = self.get_agent({'subtype': 'srt', 'sublang': 'dualchs', 'ocrvender': 'TC'})
+        agent = self.get_agent({'subtype': 'srt', 'sublang': 'dualchs'})
 
         items = {
             'temp': False, 'rar': False, 'mansearch': False, 'year': '2018', 'season': '',
