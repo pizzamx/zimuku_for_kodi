@@ -9,30 +9,6 @@ msgctxt "#30101"
 msgid "Site URL"
 msgstr "网址"
 
-msgctxt "#30110"
-msgid "OCR SERVICE"
-msgstr "选择 OCR 服务"
-
-msgctxt "#301101"
-msgid "BIDU"
-msgstr "百度"
-
-msgctxt "#301102"
-msgid "TC"
-msgstr "腾讯"
-
-msgctxt "#30111"
-msgid "BAIDU OCR TOKEN"
-msgstr "百度 OCR TOKEN: access_token="
-
-msgctxt "#30112"
-msgid "TENCENT OCR SECRET ID"
-msgstr "腾讯 OCR SECRET ID"
-
-msgctxt "#30113"
-msgid "TENCENT OCR SECRET KEY"
-msgstr "腾讯 OCR SECRET KEY"
-
 msgctxt "#30200"
 msgid "Sub preference"
 msgstr "字幕下载偏好"

@@ -1,3 +1,6 @@
+v0.2.2(2025/06/27)
+- 硬编码OCR
+
 v0.2c(2024/10/28)
 - 增加腾讯 OCR 服务，参考: https://console.cloud.tencent.com/ocr/overview
 - 输入百度 token 的时候不需要前面一串 URL 了

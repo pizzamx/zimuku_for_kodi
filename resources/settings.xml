@@ -9,52 +9,9 @@
 					<control type="edit" format="string">
 						<heading>30101</heading>
 					</control>
-                	<default>https://so.zimuku.org</default>
+					<default>https://srtku.com</default>
                 	<constraints>
                 		<allowempty>false</allowempty>
-                	</constraints>
-                </setting>
-				<setting id="ocr_select" type="string" label="30110" help="">
-					<level>0</level>
-					<default>1</default>
-					<constraints>
-						<options>
-							<option label="301101">BIDU</option>
-							<option label="301102">TC</option>
-						</options>
-					</constraints>
-					<control type="list" format="string">
-						<heading>30110</heading>
-					</control>
-				</setting>				
-				<setting id="bidu_ocr_url" type="string" label="30111" help="">
-                	<level>0</level>
-					<control type="edit" format="string">
-						<heading>301011</heading>
-					</control>
-                	<default>YOUR_BAIDU_ACCESS_TOKEN</default>
-                	<constraints>
-                		<allowempty>true</allowempty>
-                	</constraints>
-                </setting>
-				 <setting id="tc_ocr_id" type="string" label="30112" help="">
-                	<level>0</level>
-					<control type="edit" format="string">
-						<heading>30112</heading>
-					</control>
-                	<default>YOUR_TENCENT_SECRET_ID</default>
-                	<constraints>
-                		<allowempty>true</allowempty>
-                	</constraints>
-                </setting>
-				 <setting id="tc_ocr_key" type="string" label="30113" help="">
-                	<level>0</level>
-					<control type="edit" format="string">
-						<heading>30113</heading>
-					</control>
-                	<default>YOUR_TENCENT_SECRET_KEY</default>
-                	<constraints>
-                		<allowempty>true</allowempty>
                 	</constraints>
                 </setting>
 			</group>
