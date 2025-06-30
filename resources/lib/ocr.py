@@ -27,6 +27,7 @@ This script is designed to work in restricted environments like Kodi add-ons.
 import base64
 import struct
 import sys
+from typing import Tuple
 
 
 class BmpOcr:
@@ -100,7 +101,7 @@ class BmpOcr:
         # Calculate row size with padding (stride)
         self.row_stride = (self.IMG_WIDTH * 3 + 3) & ~3
 
-    def _get_pixel(self, x: int, y: int) -> tuple[int, int, int]:
+    def _get_pixel(self, x: int, y: int) -> Tuple[int, int, int]:
         """
         Gets the (B, G, R) color tuple for a pixel at (x, y).
         Handles the bottom-up row order of BMP files.
