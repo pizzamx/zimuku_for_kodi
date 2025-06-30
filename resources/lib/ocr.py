@@ -27,7 +27,7 @@ This script is designed to work in restricted environments like Kodi add-ons.
 import base64
 import struct
 import sys
-from typing import Tuple
+from typing import Tuple, List
 
 
 class BmpOcr:
@@ -121,7 +121,7 @@ class BmpOcr:
         # Use average brightness to determine if it's foreground
         return (r + g + b) / 3 < threshold
 
-    def _match_digit(self, feature_vector: list[int]) -> str:
+    def _match_digit(self, feature_vector: List[int]) -> str:
         """
         Finds the best matching digit for a given feature vector.
         It calculates the Hamming distance between the input vector and each template.
