@@ -21,15 +21,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 import os
 import sys
 import time
-import json
-import base64
 import urllib
 import requests
 from bs4 import BeautifulSoup
+from ocr import BmpOcr
 
 
 class Zimuku_Agent:
-    def __init__(self, base_url, dl_location, logger, unpacker, settings, ocrUrl=''):
+    def __init__(self, base_url, dl_location, logger, unpacker, settings):
         self.ua = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)'
         self.ZIMUKU_BASE = base_url
         # self.ZIMUKU_API = '%s/search?q=%%s&vertoken=%%s' % base_url
@@ -43,7 +42,6 @@ class Zimuku_Agent:
         self.plugin_settings = settings
         self.session = requests.Session()
         self.vertoken = ''
-        self.ocrUrl = ocrUrl
 
         # 一次性调用，获取必需的cookies，验证机制可能之后会变
         self.init_site()
@@ -92,6 +90,9 @@ class Zimuku_Agent:
                 s.get(url, headers=request_headers)
                 http_response = s.get(url, headers=request_headers)
             """
+            if 'class="verifyimg"' in str(http_response.content):
+                self.verify(url)
+                http_response = s.get(url, headers=request_headers)
 
             headers = http_response.headers
             http_body = http_response.content
@@ -101,38 +102,30 @@ class Zimuku_Agent:
 
         return headers, http_body
 
-    def verify(self, url, append):
+    def verify(self, url):
         headers = None
         http_body = None
-        s = self.session
+        session = self.session
         try:
             request_headers = {'User-Agent': self.ua}
 
             a = requests.adapters.HTTPAdapter(max_retries=3)
-            s.mount('https://', a)
+            session.mount('https://', a)
 
             self.logger.log(sys._getframe().f_code.co_name,
                             '[CHALLENGE VERI-CODE] requests GET [%s]' % (url), level=3)
 
-            http_response = s.get(url, headers=request_headers)
+            http_response = session.get(url, headers=request_headers)
 
             if http_response.status_code != 200:
                 soup = BeautifulSoup(http_response.content, 'html.parser')
-                content = soup.find_all(attrs={'class': 'verifyimg'})[
+                imgSrc = soup.find_all(attrs={'class': 'verifyimg'})[
                     0].get('src')
-                if content is not None:
+                if imgSrc is not None:
+                    base64 = imgSrc.split('data:image/bmp;base64,')[1]
                     # 处理编码
-                    ocrurl = self.ocrUrl
-                    payload = {'imgdata': content}
-                    headers = {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.54 Safari/537.36'
-                    }
-                    response = requests.request(
-                        "POST", ocrurl, headers=headers, json=payload)
-                    result_json = json.loads(response.text)
-                    text = ''
-                    if result_json['code'] == 1:
-                        text = result_json['result']
+                    ocr = BmpOcr(base64)
+                    text = ocr.recognize()
                     str1 = ''
                     i = 0
                     for ch in text:
@@ -141,13 +134,12 @@ class Zimuku_Agent:
                         else:
                             str1 += hex(ord(text[i]))
                         i = i + 1
-
                     # 使用带验证码的访问
+                    sep_char = '&' if '?' in url else '?'
                     get_cookie_url = '%s%s&%s' % (
-                        url, append, 'security_verify_img=' + str1.replace('0x', ''))
-                    http_response = s.get(
+                        url, sep_char, 'security_verify_img=' + str1.replace('0x', ''))
+                    http_response = session.get(
                         get_cookie_url, headers=request_headers)
-                    a = 1
 
         except Exception as e:
             self.logger.log(sys._getframe().f_code.co_name,
@@ -288,13 +280,13 @@ class Zimuku_Agent:
             # self.get_page(get_cookie_url)
 
             # 处理验证码逻辑
-            # self.verify(url, '&chost=zimuku.org')
+            #self.verify(url, '&chost=zimuku.org')
 
             # 真正的搜索
             self.logger.log(sys._getframe().f_code.co_name,
                             "Search API url: %s" % (url))
 
-            url += '&chost=zimuku.org'
+            #url += '&chost=zimuku.org'
             _, data = self.get_page(url)
             soup = BeautifulSoup(data, 'html.parser')
         except Exception as e:
@@ -302,8 +294,10 @@ class Zimuku_Agent:
                             (Exception, e), level=3)
             return []
 
-        s_e = 'S%02dE%02d' % (int(items['season']), int(items['episode'])
-                              ) if items['season'] != '' and items['episode'] != '' else 'N/A'
+        s_e = s_e_CN = 'N/A'
+        if items['season'] != '' and items['episode'] != '':
+            s_e = 'S%02dE%02d' % (int(items['season']), int(items['episode']))
+            s_e_CN = '第%d季第%d集' % (int(items['season']), int(items['episode']))
         if s_e != 'N/A':
             # 1. 从搜索结果中看看是否能直接找到
             sub_list = soup.find_all('tr')
@@ -311,7 +305,7 @@ class Zimuku_Agent:
                 s_e, [ep.a.text for ep in sub_list]))
             for sub in reversed(sub_list):
                 sub_name = sub.a.text
-                if s_e in sub_name.upper():
+                if s_e in sub_name.upper() or s_e_CN in sub_name:
                     subtitle_list.append(self.extract_sub_info(sub, 1))
                     # break  还是全列出来吧
 
@@ -362,8 +356,8 @@ class Zimuku_Agent:
                     subtitle = self.extract_sub_info(sub, 2)
                     unfiltered_sub_list.append(subtitle)
                     sub_name = sub.a.text
-                    if s_e in sub_name.upper():
-                        subtitle_list.append(subtitle)
+                    if s_e in sub_name.upper() or s_e_CN in sub_name:
+                        subtitle_list.append(self.extract_sub_info(sub, 2))
                 # 如果匹配到了季，那就得返回了，没有就是没有
                 # 如果没有匹配到，可能整季度的字幕被打包到一个文件中了，那就把所有的结果都返回让用户自己选择
                 if len(subtitle_list) > 0:
@@ -511,7 +505,7 @@ class Zimuku_Agent:
                                   ".gz", ".xz", ".iso", ".tgz", ".tbz2", ".cbr")
         try:
             # 处理验证码逻辑
-            # self.verify(url, '?')
+            #self.verify(url, '?')
 
             # Subtitle detail page.
             headers, data = self.get_page(url)
@@ -522,7 +516,7 @@ class Zimuku_Agent:
                 url = urllib.parse.urljoin(self.ZIMUKU_BASE, url)
 
             # 处理验证码逻辑
-            # self.verify(url, '?')
+            #self.verify(url, '&chost=zimuku.org')
 
             # Subtitle download-list page.
             headers, data = self.get_page(url)
@@ -641,7 +635,7 @@ class Zimuku_Agent:
                                 "DOWNLOAD SUBTITLE: %s" % (url))
 
                 # 处理验证码逻辑
-                # self.verify(url, '?')
+                #self.verify(url, '?')
 
                 # Download subtitle one by one until success.
                 headers, data = self.get_page(url, Referer=referer)

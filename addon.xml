@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="script.subtitles.zimukux" name="ZiMuKuX" version="0.2.1" provider-name="pizzamx">
+<addon id="script.subtitles.zimukux" name="ZiMuKuX" version="0.3" provider-name="pizzamx">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.beautifulsoup4" version="4.6.2"/>
@@ -20,8 +20,15 @@
             <fanart>resources/fanart.png</fanart>
         </assets>
         <news>
-v0.2.1(2023/12/11)
-- Merged https://github.com/pizzamx/zimuku_for_kodi/pull/23（thanks @jiangpengcheng for solving the cookie issue）
+v0.3(2025/06/30)
+- Hardcoded OCR mechanism, credits to @realaboo( and behind-the-scene Gemini Code Assist)
+
+v0.2c(2024/10/28)
+- Add new OCR vender (Tencent), ref: https://console.cloud.tencent.com/ocr/overview
+
+v0.2b(2024/4/6)
+- Need to resolve Captcha issue again
+- Do change OCR service URL to your own, ref: https://cloud.baidu.com/doc/OCR/s/dk3iqnq51
 
 v0.2.0(2023/5/30)
 - Merged https://github.com/pizzamx/zimuku_for_kodi/pull/18 (big thanks to lm317379829 for solving the captcha issue)

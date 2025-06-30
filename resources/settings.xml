@@ -14,16 +14,6 @@
                 		<allowempty>false</allowempty>
                 	</constraints>
                 </setting>
-				 <setting id="ocr_url" type="string" label="301011" help="">
-                	<level>0</level>
-					<control type="edit" format="string">
-						<heading>301011</heading>
-					</control>
-                	<default></default>
-                	<constraints>
-                		<allowempty>false</allowempty>
-                	</constraints>
-                </setting>
 			</group>
 		</category>
 		<category id="subpref" label="30200" help="">

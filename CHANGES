@@ -1,6 +1,12 @@
-v0.2.1(2023/12/11)
-- Merged https://github.com/pizzamx/zimuku_for_kodi/pull/23（感谢 @jiangpengcheng 解决）
-- 又回到了看起来很傻但我愣是没解决的验证套路
+v0.3(2025/06/30)
+- 硬编码 OCR 识别，credits to @realaboo（以及背后的 Gemini Code Assist）
+
+v0.2c(2024/10/28)
+- 增加腾讯 OCR 服务，参考: https://console.cloud.tencent.com/ocr/overview
+- 输入百度 token 的时候不需要前面一串 URL 了
+
+v0.2b(2024/4/6)
+- 又改回验证码分支了，需要自行架设一个百度的服务，参考 https://cloud.baidu.com/doc/OCR/s/dk3iqnq51
 
 v0.2(2023/5/30)
 - Merged https://github.com/pizzamx/zimuku_for_kodi/pull/18（感谢 @lm317379829 解决了验证码，以及好厉害的服务）

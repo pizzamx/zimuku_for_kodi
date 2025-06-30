@@ -229,11 +229,10 @@ def run():
                  else __addon__.getSetting("proxy_server"))
         os.environ["HTTP_PROXY"] = os.environ["HTTPS_PROXY"] = proxy
 
-    ocrUrl= __addon__.getSetting("ocr_url")
 
     # 查询
     agent = zmkagnt.Zimuku_Agent(zimuku_base_url, __temp__, logger, Unpacker(),
-                                 {'subtype': tpe, 'sublang': lang}, ocrUrl)
+                                 {'subtype': tpe, 'sublang': lang})
 
     handle_params(params)
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
