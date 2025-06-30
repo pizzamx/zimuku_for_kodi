@@ -5,6 +5,11 @@ import zipfile
 import unittest
 # from lib import zimuku_agent as zmkagnt
 
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+lib_path = os.path.join(project_root, 'resources', 'lib')
+sys.path.insert(0, lib_path)
+
+import zimuku_agent
 
 class Logger:
     def log(self, module, msg, level=0):
@@ -31,27 +36,18 @@ class Unpacker:
 
 class TestZimukuAgent(unittest.TestCase):
     def setUp(self):
-        lib_dir = os.path.abspath(
-            os.path.join(
-                os.path.dirname(os.path.realpath(os.path.realpath(__file__))),
-                os.pardir, 'resources'))
-        sys.path.insert(0, lib_dir)
 
-        global zmkagnt
-        from lib import zimuku_agent as zmkagnt
-
-        global tmp_folder
-        tmp_folder = tempfile.TemporaryDirectory().name
-        os.mkdir(tmp_folder)
+        self.tmp_dir_obj = tempfile.TemporaryDirectory()
+        self.tmp_folder = self.tmp_dir_obj.name
 
         self.base_url = 'http://srtku.com'
 
         return super().setUp()
 
     def get_agent(self, settings):
-        return zmkagnt.Zimuku_Agent(
-            self.base_url, tmp_folder, Logger(),
-            Unpacker(tmp_folder),
+        return zimuku_agent.Zimuku_Agent(
+            self.base_url, self.tmp_folder, Logger(),
+            Unpacker(self.tmp_folder),
             settings)
 
     def test_pass_captcha(self):
