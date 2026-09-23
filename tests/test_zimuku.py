@@ -3,6 +3,9 @@ import sys
 import tempfile
 import zipfile
 import unittest
+from unittest.mock import patch
+
+import requests
 # from lib import zimuku_agent as zmkagnt
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
@@ -34,6 +37,29 @@ class Unpacker:
         return os.path.join(self.folder, parent), file_list
 
 
+class FakeResponse:
+    def __init__(self, content, status_code=200, url=None):
+        self.content = content
+        self.status_code = status_code
+        self.url = url
+
+
+class FakeSession:
+    def __init__(self, responses):
+        self.cookies = requests.cookies.RequestsCookieJar()
+        self.responses = list(responses)
+        self.calls = []
+
+    def mount(self, *args):
+        pass
+
+    def get(self, url, headers=None):
+        self.calls.append((url, headers))
+        if not self.responses:
+            raise AssertionError('Unexpected HTTP request: %s' % url)
+        return self.responses.pop(0)
+
+
 class TestZimukuAgent(unittest.TestCase):
     def setUp(self):
 
@@ -49,6 +75,91 @@ class TestZimukuAgent(unittest.TestCase):
             self.base_url, self.tmp_folder, Logger(),
             Unpacker(self.tmp_folder),
             settings)
+
+    def get_offline_agent(self):
+        """Build an agent without running its network-dependent initializer."""
+        agent = object.__new__(zimuku_agent.Zimuku_Agent)
+        agent.VERIFY_DATA = '313932302c31303830'
+        agent.VERIFY_MAX_TRY = 3
+        agent.default_headers = {'User-Agent': 'test-agent'}
+        agent.cookie_file = None
+        agent.logger = Logger()
+        agent.session = FakeSession([])
+        return agent
+
+    @staticmethod
+    def challenge_fixture():
+        fixture = os.path.join(os.path.dirname(__file__), 'fixtures', 'challenge.html')
+        with open(fixture, 'rb') as challenge_file:
+            return challenge_file.read()
+
+    def test_verify_url_uses_challenge_data_and_root_path(self):
+        agent = self.get_offline_agent()
+        url = 'https://srtku.com/search?q=example'
+
+        verify_url = agent.verify_url(url, self.challenge_fixture(), '12345')
+
+        self.assertEqual(
+            verify_url,
+            'https://srtku.com/?security_verify_data=616263&'
+            'security_verify_img=3132333435')
+
+    def test_verify_accepts_challenge_and_persists_cookie(self):
+        url = 'https://srtku.com/search?q=example'
+        challenge = FakeResponse(self.challenge_fixture(), url=url)
+        agent = self.get_offline_agent()
+        agent.cookie_file = os.path.join(self.tmp_folder, 'cookies.txt')
+        agent.session = FakeSession([
+            FakeResponse(b'submitted', url='https://srtku.com/'),
+            FakeResponse(b'<html>subtitle results</html>', url=url),
+        ])
+
+        with patch.object(zimuku_agent, 'BmpOcr') as ocr:
+            ocr.return_value.recognize.return_value = '12345'
+            self.assertTrue(agent.verify(url, challenge))
+
+        self.assertEqual(len(agent.session.calls), 2)
+        self.assertEqual(
+            agent.session.calls[0][0],
+            'https://srtku.com/?security_verify_data=616263&'
+            'security_verify_img=3132333435')
+        self.assertEqual(agent.session.calls[1][0], url)
+        self.assertEqual(agent.session.cookies.get('srcurl'), agent.to_hex(url))
+        self.assertTrue(os.path.exists(agent.cookie_file))
+
+        loaded_agent = self.get_offline_agent()
+        loaded_agent.cookie_file = agent.cookie_file
+        loaded_agent.load_cookies()
+        self.assertEqual(loaded_agent.session.cookies.get('srcurl'), agent.to_hex(url))
+
+    def test_verify_rejects_challenge_when_confirmation_is_still_a_challenge(self):
+        url = 'https://srtku.com/search?q=example'
+        challenge_body = self.challenge_fixture()
+        agent = self.get_offline_agent()
+        agent.VERIFY_MAX_TRY = 1
+        agent.session = FakeSession([
+            FakeResponse(challenge_body, url='https://srtku.com/'),
+            FakeResponse(challenge_body, url=url),
+        ])
+
+        with patch.object(zimuku_agent, 'BmpOcr') as ocr:
+            ocr.return_value.recognize.return_value = '12345'
+            self.assertFalse(agent.verify(url, FakeResponse(challenge_body, url=url)))
+
+        self.assertEqual(len(agent.session.calls), 2)
+
+    def test_verify_rejects_malformed_challenge_without_image(self):
+        agent = self.get_offline_agent()
+
+        with patch.object(zimuku_agent, 'BmpOcr') as ocr:
+            self.assertFalse(agent.verify(
+                'https://srtku.com/search?q=example',
+                FakeResponse(
+                    b'<html><img class="verifyimg" src="not-a-data-uri" />'
+                    b'</html>')))
+
+        ocr.assert_not_called()
+        self.assertEqual(agent.session.calls, [])
 
     def test_pass_captcha(self):
         agent = self.get_agent({'subtype': 'srt', 'sublang': 'dualchs'})
